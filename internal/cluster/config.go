@@ -3,6 +3,7 @@ package cluster
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -30,6 +31,11 @@ func (c *Config) save() error {
 	content, err := yaml.Marshal(c)
 	if err != nil {
 		return fmt.Errorf("failed to marshal cluster config: %w", err)
+	}
+
+	err = os.MkdirAll(filepath.Dir(c.fileName), 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create directory for cluster config: %w", err)
 	}
 
 	err = os.WriteFile(c.fileName, content, 0644)
