@@ -31,7 +31,7 @@ builds:
       - arm64
 
     # Ignore certain combinations
-    ignore:
+    ignore: []
       # Windows ARM64 support is experimental, uncomment if needed
       # - goos: windows
       #   goarch: arm64
@@ -61,6 +61,21 @@ archives:
 checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
+
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      ids:
+        - tbunny
+      sign:
+        certificate: "{{.Env.MACOS_SIGN_P12}}"
+        password: "{{.Env.MACOS_SIGN_PASSWORD}}"
+      notarize:
+        issuer_id: "{{.Env.MACOS_NOTARY_ISSUER_ID}}"
+        key_id: "{{.Env.MACOS_NOTARY_KEY_ID}}"
+        key: "{{.Env.MACOS_NOTARY_KEY}}"
+        wait: true
+        timeout: 20m
 
 homebrew_casks:
   - name: tbunny
