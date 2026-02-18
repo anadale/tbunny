@@ -1,0 +1,105 @@
+# Global wildcards
+*~
+*.[7bgx]z
+*.aps
+*.bak
+*.cab
+*.dll
+*.exe
+*.fla
+#*.[Hh]x[IiSs]
+*.hx[is]
+*.[jrt]ar
+*.log
+*.ms[imp]
+*.ncb
+*.obj
+*.old
+*.opensdf
+*.orig
+*.pdb
+*.Publish.xml
+*.sav
+*.sdf
+*.sln.cache
+*.suo
+*.tgz
+*.tmp
+*.user
+*.zip
+
+# Environment variables
+.env
+
+# SQLite
+*.db
+*.db3
+*.sqlite
+*.sqlite3
+*.*-journal
+*.*-shm
+*.*-wal
+
+# Well-known infrastructure folders
+/artifacts/
+/packages/
+/target/
+aspnet_client/
+node_modules/
+
+# IDEs
+.idea/
+.metadata/
+.settings/
+.vs/
+.vscode/
+[Tt]est[Rr]esults/
+**/[Bb]in/*
+!**/[Bb]in/*.refresh
+!**/[Bb]in/roslyn/
+**/[Bb]in/roslyn/*
+!**/[Bb]in/roslyn/*.refresh
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+ipch/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.iml
+*.userprefs
+
+# .NETCore
+appsettings.Production.json
+appsettings.Staging.json
+project.lock.json
+
+# Visual Studio project upgrade
+[Bb]ackup/
+UpgradeLog*
+_UpgradeReport_Files/
+
+# Operating systems generated
+__MACOSX/
+*.DS_Store
+[Dd]esktop.ini
+[Tt]humbs.db
+
+# JetBrains IDEA GraphQL plugin
+/.graphqlconfig
+/schema.graphql
+
+# Verify Snapshot Testing
+*.received.*
+
+# Task files
+tasks.json
+tasks/
+
+# AI
+.claude/
+.cursor/
+.specify/
+
+# TBunny
+docs/
+dist/

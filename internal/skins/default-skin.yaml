@@ -1,0 +1,74 @@
+skin:
+  body:
+    fgColor: dodgerblue
+    bgColor: black
+    logoColor: orange
+  frame:
+    border:
+      fgColor: skyblue
+      focusColor: aqua
+    menu:
+      fgColor: white
+      fgStyle: dim
+      keyColor: dodgerblue
+      numKeyColor: fuchsia
+    crumb:
+      fgColor: black
+      bgColor: aqua
+      activeColor: orange
+    title:
+      fgColor: aqua
+      highlightColor: fuchsia
+      counterColor: papayawhip
+      filterColor: steelblue
+  info:
+    sectionColor: orange
+    fgColor: white
+  help:
+    fgColor: cadetblue
+    bgColor: black
+    sectionColor: green
+    keyColor: dodgerblue
+    numKeyColor: fuchsia
+  views:
+    table:
+      fgColor: skyblue
+      bgColor: black
+      cursorFgColor: black
+      cursorBgColor: skyblue
+      markColor: palegreen
+      header:
+        fgColor: white
+        bgColor: black
+        sorterColor: skyblue
+    stats:
+      bgColor: black
+      labelFgColor: white
+      valueFgColor: skyblue
+      captionFgColor: aqua
+      captionBgColor: black
+    json:
+      bgColor: black
+      propertyNameColor: white
+      stringColor: orange
+      numberColor: fuchsia
+      booleanColor: aqua
+      nullColor: red
+      braceColor: skyblue
+      bracketColor: skyblue
+      punctuationColor: skyblue
+      indentWidth: 2
+  dialog:
+    fgColor: skyblue
+    bgColor: black
+    buttonFgColor: skyblue
+    buttonBgColor: black
+    buttonFocusFgColor: black
+    buttonFocusBgColor: dodgerblue
+    labelFgColor: white
+    fieldFgColor: white
+    dropdownFgColor: black
+    dropdownBgColor: skyblue
+    dropdownFocusFgColor: black
+    dropdownFocusBgColor: dodgerblue
+    

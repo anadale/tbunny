@@ -1,0 +1,168 @@
+# GoReleaser configuration for TBunny
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # Ensure dependencies are up to date
+    - go mod tidy
+
+builds:
+  - id: tbunny
+    main: ./cmd/tbunny
+    binary: tbunny
+
+    # Set the version variable in main.go
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+
+    env:
+      - CGO_ENABLED=0
+
+    goos:
+      - linux
+      - darwin
+      - windows
+
+    goarch:
+      - amd64
+      - arm64
+
+    # Ignore certain combinations
+    ignore:
+      # Windows ARM64 support is experimental, uncomment if needed
+      # - goos: windows
+      #   goarch: arm64
+
+archives:
+  - id: tbunny-archive
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+
+    # Use zip for Windows
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+homebrew_casks:
+  - name: tbunny
+    repository:
+      owner: anadale
+      name: homebrew-tbunny
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+
+    directory: Casks
+
+    homepage: "https://github.com/anadale/tbunny"
+
+    description: "A fast, keyboard-driven terminal UI for managing RabbitMQ clusters"
+
+    license: "Apache-2.0"
+
+    binaries:
+      - tbunny
+
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+
+    commit_msg_template: "Cask update for {{ .ProjectName }} version {{ .Tag }}"
+
+    skip_upload: auto
+
+changelog:
+  sort: asc
+  use: github
+
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'
+      - 'Merge pull request'
+      - 'Merge branch'
+
+  groups:
+    - title: Features
+      regexp: '^feat.*:.*$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^fix.*:.*$'
+      order: 1
+    - title: Enhancements
+      regexp: '^(refactor|perf|enhance).*:.*$'
+      order: 2
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: anadale
+    name: tbunny
+
+  # Create release as draft for manual review (optional)
+  draft: false
+
+  # Mark as prerelease if version contains alpha, beta, rc
+  prerelease: auto
+
+  # Release name template
+  name_template: "TBunny {{.Version}}"
+
+  # Header and footer for release notes
+  header: |
+    ## TBunny {{.Version}}
+
+    Welcome to this new release of TBunny! 🐰
+
+    ### Installation
+
+    Download the appropriate binary for your platform below, extract it, and add it to your PATH.
+
+    Alternatively, install using Go:
+    ```bash
+    go install github.com/anadale/tbunny/cmd/tbunny@{{.Tag}}
+    ```
+
+    Or via Homebrew (macOS):
+    ```bash
+    brew install anadale/tbunny/tbunny
+    ```
+
+  footer: |
+    ---
+
+    **Full Changelog**: https://github.com/anadale/tbunny/compare/{{.PreviousTag}}...{{.Tag}}
+
+    ### Verifying Downloads
+
+    You can verify the integrity of downloaded files using checksums:
+    ```bash
+    sha256sum -c checksums.txt
+    ```
+
+# Announce the release (optional integrations)
+# announce:
+#   discord:
+#     enabled: true
+#     message_template: 'TBunny {{.Tag}} is out! Check it out at {{ .ReleaseURL }}'
