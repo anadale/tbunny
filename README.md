@@ -9,6 +9,8 @@
 
 TBunny is your friendly terminal companion for RabbitMQ management. No more clicking through web interfaces – manage your queues, exchanges, virtual hosts, and users right from your terminal with lightning-fast keyboard shortcuts!
 
+[![Demo](https://asciinema.org/a/CSSk6c6IWMEjShtG.svg)](https://asciinema.org/a/CSSk6c6IWMEjShtG)
+
 ### 🎓 A Learning Journey
 
 This project started as a personal adventure to learn Go, and it's been heavily inspired by the incredible [k9s](https://github.com/derailed/k9s) project. Both the architecture and the visual design are based on k9s with some modifications. If you're familiar with k9s, you'll feel right at home here! Huge thanks to **Fernand Galiana** and the entire k9s team for creating such an amazing tool and sharing their knowledge with the community.

@@ -101,5 +101,6 @@ tasks/
 .specify/
 
 # TBunny
-docs/
+config/
 dist/
+docs/
