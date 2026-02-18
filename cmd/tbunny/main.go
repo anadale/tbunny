@@ -19,9 +19,10 @@ import (
 var (
 	version = "dev"
 	rootCmd = &cobra.Command{
-		Use:   "tbunny",
-		Short: "A fast, keyboard-driven terminal UI for managing RabbitMQ clusters",
-		RunE:  run,
+		Use:     "tbunny",
+		Short:   "A fast, keyboard-driven terminal UI for managing RabbitMQ clusters",
+		Version: version,
+		RunE:    run,
 	}
 	logFilePath string
 	configDir   string
@@ -32,6 +33,7 @@ func init() {
 }
 
 func initFlags() {
+	rootCmd.SetVersionTemplate("TBunny version {{.Version}}\n")
 	rootCmd.PersistentFlags().StringVar(&logFilePath, "log-file", "", "Specify the log file")
 	rootCmd.PersistentFlags().StringVar(&configDir, "config-dir", "", "Specify the configuration directory")
 }
