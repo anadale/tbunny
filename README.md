@@ -9,7 +9,7 @@
 
 TBunny is your friendly terminal companion for RabbitMQ management. No more clicking through web interfaces – manage your queues, exchanges, virtual hosts, and users right from your terminal with lightning-fast keyboard shortcuts!
 
-[![Demo](https://asciinema.org/a/CSSk6c6IWMEjShtG.svg)](https://asciinema.org/a/CSSk6c6IWMEjShtG)
+[![Demo](https://asciinema.org/a/CSSk6c6IWMEjShtG.svg)](https://asciinema.org/a/fDKVqi60UkSrLEIv)
 
 ### 🎓 A Learning Journey
 
