@@ -11,10 +11,10 @@ import (
 	"tbunny/internal/view"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
 	"github.com/go-faster/jx"
 	"github.com/rivo/tview"
-	"golang.design/x/clipboard"
 )
 
 const MessageViewTitleFmt = " [fg:bg:b]%s [count:bg:b]%d[fg:bg:-][fg:bg:-] "
@@ -262,7 +262,7 @@ func (v *MessageView) togglePropertiesCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (v *MessageView) copyPayloadCmd(*tcell.EventKey) *tcell.EventKey {
-	clipboard.Write(clipboard.FmtText, []byte(v.message.Payload))
+	_ = clipboard.WriteAll(v.message.Payload)
 
 	return nil
 }
