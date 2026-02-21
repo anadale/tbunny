@@ -3,6 +3,8 @@ package queues
 import (
 	"fmt"
 	"log/slog"
+	"net/url"
+	"slices"
 	"tbunny/internal/rmq"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
@@ -105,6 +107,7 @@ func (q *Queues) bindKeys(km ui.KeyMap) {
 		km.Add(ui.KeyC, ui.NewKeyAction("Create", q.createQueueCmd))
 		km.Add(ui.KeyM, ui.NewKeyAction("Get messages", q.getMessagesCmd))
 		km.Add(ui.KeyP, ui.NewKeyAction("Publish message", q.publishMessageCmd))
+		km.Add(ui.KeyV, ui.NewKeyAction("Move messages", q.moveMessagesCmd))
 		km.Add(tcell.KeyCtrlP, ui.NewKeyAction("Purge", q.purgeQueueCmd))
 	}
 }
@@ -240,6 +243,61 @@ func (q *Queues) publishMessage(vhost, queue string, props map[string]any, paylo
 	}
 
 	q.App().StatusLine().Info(fmt.Sprintf("Message published successfully to %s", queue))
+
+	q.App().DismissModal()
+	q.RequestUpdate(view.PartialUpdate)
+}
+
+func (q *Queues) moveMessagesCmd(*tcell.EventKey) *tcell.EventKey {
+	queue, ok := q.GetSelectedResource()
+	if !ok {
+		return nil
+	}
+
+	node, err := q.Cluster().GetNode(queue.Node)
+	if err != nil {
+		q.App().StatusLine().Error(fmt.Sprintf("Failed to get node info: %s", err))
+		return nil
+	}
+
+	if !slices.ContainsFunc(node.ErlangApps, func(app rabbithole.ErlangApp) bool { return app.Name == "rabbitmq_shovel" }) {
+		q.App().StatusLine().Error("Shovel plugin is not enabled on the selected node")
+		return nil
+	}
+
+	destinationQueues, err := q.Cluster().ListQueuesIn(queue.Vhost)
+	if err != nil {
+		q.App().StatusLine().Error(fmt.Sprintf("Failed to list queues: %s", err))
+		return nil
+	}
+
+	destinationQueueNames := utils.FilterMap(
+		destinationQueues,
+		func(q rabbithole.QueueInfo) bool { return q.Name != queue.Name },
+		func(q rabbithole.QueueInfo) string { return q.Name })
+
+	ShowMoveMessagesDialog(q.App(), queue.Vhost, queue.Name, destinationQueueNames, q.moveMessages)
+
+	return nil
+}
+
+func (q *Queues) moveMessages(vhost, sourceQueue, destinationQueue string) {
+	uri := rabbithole.URISet{fmt.Sprintf("amqp:///%s", url.PathEscape(vhost))}
+	sd := rabbithole.ShovelDefinition{
+		SourceURI:        uri,
+		DestinationURI:   uri,
+		AckMode:          "on-confirm",
+		DeleteAfter:      rabbithole.DeleteAfter("queue-length"),
+		SourceProtocol:   "amqp091",
+		SourceQueue:      sourceQueue,
+		DestinationQueue: destinationQueue,
+	}
+
+	_, err := q.Cluster().DeclareShovel(vhost, fmt.Sprintf("move-from-%s", sourceQueue), sd)
+	if err != nil {
+		q.App().StatusLine().Error(fmt.Sprintf("Failed to create shovel: %s", err.Error()))
+		return
+	}
 
 	q.App().DismissModal()
 	q.RequestUpdate(view.PartialUpdate)
