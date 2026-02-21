@@ -34,7 +34,7 @@ func NewTable[R TableRow]() *Table[R] {
 	}
 
 	t.SetSelectable(true, false)
-	t.SetFixed(1, 0)
+	t.SetFixed(1, 1)
 	t.SetBorder(true)
 	//t.SetBorderAttributes(tcell.AttrBold)
 	t.SetBorderPadding(0, 0, 1, 1)
@@ -120,6 +120,9 @@ func (t *Table[R]) rebuildTable() {
 }
 
 func (t *Table[R]) updateDataRows(oldRows []R) {
+	// Save horizontal scroll position to preserve it across updates
+	_, colOffset := t.GetOffset()
+
 	// Save current selection
 	selectedRow, _ := t.GetSelection()
 	selectedRowID := t.getRowID(selectedRow)
@@ -215,6 +218,11 @@ func (t *Table[R]) updateDataRows(oldRows []R) {
 		t.SetSelectable(true, false)
 		t.Select(1, 0)
 	}
+
+	// Restore horizontal scroll position
+	// (row offset is managed by clampToSelection from Select() calls above)
+	rowOff, _ := t.GetOffset()
+	t.SetOffset(rowOff, colOffset)
 }
 
 func (t *Table[R]) getRowID(rowIndex int) string {
