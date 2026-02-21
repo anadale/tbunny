@@ -21,6 +21,8 @@ import (
 
 type Queues struct {
 	view.ClusterAwareResourceView[*QueueResource]
+
+	wideMode bool
 }
 
 func NewQueues() view.ResourceView[*QueueResource] {
@@ -30,6 +32,7 @@ func NewQueues() view.ResourceView[*QueueResource] {
 				view.NewClusterAwareResourceTableView[*QueueResource]("Queues", view.NewLiveUpdateStrategy()),
 			),
 			bindings.QueueSubject),
+		false,
 	}
 
 	q.SetResourceProvider(&q)
@@ -78,14 +81,22 @@ func (q *Queues) GetColumns() []ui.TableColumn {
 		{Name: "msgReady", Title: "MR", Align: tview.AlignRight},
 		{Name: "msgUnacked", Title: "MU", Align: tview.AlignRight},
 		{Name: "msgTotal", Title: "MT", Align: tview.AlignRight},
-		{Name: "msgRateIn", Title: "MR/S", Align: tview.AlignRight},
-		{Name: "msgRateDelivered", Title: "MD/S", Align: tview.AlignRight},
-		{Name: "msgRateAcked", Title: "MA/S", Align: tview.AlignRight},
-		//{Name: "node", Title: "NODE", Expansion: 3},
+	}
+
+	if q.wideMode {
+		c = append(c, []ui.TableColumn{
+			{Name: "msgRateIn", Title: "MR/S", Align: tview.AlignRight},
+			{Name: "msgRateDelivered", Title: "MD/S", Align: tview.AlignRight},
+			{Name: "msgRateAcked", Title: "MA/S", Align: tview.AlignRight},
+		}...)
 	}
 
 	if q.Cluster().ActiveVirtualHost() == "" {
-		c = append(c, []ui.TableColumn{{Name: "vhost", Title: "VHOST"}}...)
+		c = append(c, ui.TableColumn{Name: "vhost", Title: "VHOST"})
+	}
+
+	if q.wideMode {
+		c = append(c, ui.TableColumn{Name: "node", Title: "NODE"})
 	}
 
 	return c
@@ -109,7 +120,16 @@ func (q *Queues) bindKeys(km ui.KeyMap) {
 		km.Add(ui.KeyP, ui.NewKeyAction("Publish message", q.publishMessageCmd))
 		km.Add(ui.KeyV, ui.NewKeyAction("Move messages", q.moveMessagesCmd))
 		km.Add(tcell.KeyCtrlP, ui.NewKeyAction("Purge", q.purgeQueueCmd))
+		km.Add(tcell.KeyCtrlW, ui.NewKeyAction("Toggle wide mode", q.toggleWideModeCmd))
 	}
+}
+
+func (q *Queues) toggleWideModeCmd(*tcell.EventKey) *tcell.EventKey {
+	q.wideMode = !q.wideMode
+
+	q.RequestUpdate(view.FullUpdate)
+
+	return nil
 }
 
 func (q *Queues) getMessagesCmd(*tcell.EventKey) *tcell.EventKey {
