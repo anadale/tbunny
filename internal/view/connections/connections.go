@@ -29,6 +29,7 @@ func NewConnections() *Connections {
 	}
 
 	v.SetResourceProvider(v)
+	v.SetEnterAction("Show details", v.showDetails)
 	v.AddBindingKeysFn(v.bindKeys)
 
 	return v
@@ -122,4 +123,13 @@ func (v *Connections) toggleWideModeCmd(*tcell.EventKey) *tcell.EventKey {
 	v.RequestUpdate(view.FullUpdate)
 
 	return nil
+}
+
+func (v *Connections) showDetails(connection *ConnectionResource) {
+	details := NewConnectionDetails(connection.Name)
+
+	err := v.App().AddView(details)
+	if err != nil {
+		v.App().StatusLine().Error(fmt.Sprintf("Failed to load connection details: %s", err))
+	}
 }

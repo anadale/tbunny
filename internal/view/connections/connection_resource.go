@@ -38,7 +38,7 @@ func (r *ConnectionResource) ConnectionName() string {
 
 func (r *ConnectionResource) GetTableColumnValue(columnName string) string {
 	switch columnName {
-	case "host":
+	case "client":
 		return fmt.Sprintf("%s:%d", r.PeerHost, r.PeerPort)
 	case "name":
 		return r.ConnectionName()
