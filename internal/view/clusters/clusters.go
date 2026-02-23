@@ -23,6 +23,7 @@ func NewClusters() model.View {
 
 	c.SetResourceProvider(&c)
 	c.AddBindingKeysFn(c.bindKeys)
+	c.SetEnterAction("Switch cluster", c.selectCluster)
 
 	return &c
 }
@@ -70,22 +71,14 @@ func (c *Clusters) DeleteResource(cluster *ClusterResource) error {
 }
 
 func (c *Clusters) bindKeys(km ui.KeyMap) {
-	km.Add(tcell.KeyEnter, ui.NewKeyActionWithGroup("Switch cluster", c.selectClusterCmd, false, 0))
 	km.Add(ui.KeyA, ui.NewKeyAction("Add cluster", c.addClusterCmd))
 }
 
-func (c *Clusters) selectClusterCmd(*tcell.EventKey) *tcell.EventKey {
-	row, ok := c.GetSelectedResource()
-	if !ok {
-		return nil
-	}
-
+func (c *Clusters) selectCluster(row *ClusterResource) {
 	name := row.GetName()
 
 	c.App().StatusLine().Info(fmt.Sprintf("Switching to cluster %s", name))
 	c.switchToCluster(name)
-
-	return nil
 }
 
 func (c *Clusters) addClusterCmd(*tcell.EventKey) *tcell.EventKey {

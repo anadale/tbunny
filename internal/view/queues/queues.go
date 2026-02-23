@@ -37,6 +37,7 @@ func NewQueues() view.ResourceView[*QueueResource] {
 
 	q.SetResourceProvider(&q)
 	q.AddBindingKeysFn(q.bindKeys)
+	q.SetEnterAction("Show details", q.showDetails)
 
 	return &q
 }
@@ -114,7 +115,6 @@ func (q *Queues) DeleteResource(resource *QueueResource) error {
 
 func (q *Queues) bindKeys(km ui.KeyMap) {
 	if q.Cluster().IsAvailable() {
-		km.Add(tcell.KeyEnter, ui.NewHiddenKeyAction("Show details", q.showDetailsCmd))
 		km.Add(ui.KeyC, ui.NewKeyAction("Create", q.createQueueCmd))
 		km.Add(ui.KeyM, ui.NewKeyAction("Get messages", q.getMessagesCmd))
 		km.Add(ui.KeyP, ui.NewKeyAction("Publish message", q.publishMessageCmd))
@@ -157,20 +157,13 @@ func (q *Queues) getMessages(queue *QueueResource, ackMode rmq.AckMode, encoding
 	}
 }
 
-func (q *Queues) showDetailsCmd(*tcell.EventKey) *tcell.EventKey {
-	queue, ok := q.GetSelectedResource()
-	if !ok {
-		return nil
-	}
-
+func (q *Queues) showDetails(queue *QueueResource) {
 	details := NewQueueDetails(queue.Name, queue.Vhost)
 
 	err := q.App().AddView(details)
 	if err != nil {
 		q.App().StatusLine().Error(fmt.Sprintf("Failed to load queue details: %s", err))
 	}
-
-	return nil
 }
 
 func (q *Queues) createQueueCmd(*tcell.EventKey) *tcell.EventKey {

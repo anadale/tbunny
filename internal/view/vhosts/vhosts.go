@@ -26,6 +26,7 @@ func NewVHosts() view.ResourceView[*VHostResource] {
 
 	v.SetResourceProvider(&v)
 	v.AddBindingKeysFn(v.bindKeys)
+	v.SetEnterAction("Switch virtual host", v.selectVHost)
 
 	return &v
 }
@@ -104,23 +105,15 @@ func (v *VHosts) ClusterActiveVirtualHostChanged(*cluster.Cluster) {
 }
 
 func (v *VHosts) bindKeys(km ui.KeyMap) {
-	km.Add(tcell.KeyEnter, ui.NewKeyActionWithGroup("Switch virtual host", v.selectVHostCmd, false, 0))
 	km.Add(ui.KeyC, ui.NewKeyAction("Create", v.createVHostCmd))
 }
 
-func (v *VHosts) selectVHostCmd(*tcell.EventKey) *tcell.EventKey {
-	row, ok := v.GetSelectedResource()
-	if !ok {
-		return nil
-	}
-
+func (v *VHosts) selectVHost(row *VHostResource) {
 	vhost := row.Name
 
 	v.App().StatusLine().Info(fmt.Sprintf("Switching to virtual host %s", view.VhostDisplayName(vhost)))
 	v.Cluster().SetActiveVirtualHost(vhost)
 	v.App().OpenClusterDefaultView()
-
-	return nil
 }
 
 func (v *VHosts) createVHostCmd(*tcell.EventKey) *tcell.EventKey {
