@@ -3,7 +3,6 @@ package queues
 import (
 	"fmt"
 	"strings"
-	"tbunny/internal/cluster"
 	"tbunny/internal/model"
 	"tbunny/internal/skins"
 	"tbunny/internal/view"
@@ -13,7 +12,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const QueueDetailsTitleFmt = " [fg:bg:b]%s([hilite:bg:b]%s[fg:bg:-])[fg:bg:-][fg:bg:-] "
+const QueueDetailsTitleFmt = " [fg:bg:b]%s[fg:bg:-]([hilite:bg:b]%s[fg:bg:-]) "
 
 const (
 	// Minimum width for four-column mode (4 columns x 28 + padding).
@@ -21,15 +20,13 @@ const (
 )
 
 type QueueDetails struct {
-	*view.RefreshableView[*tview.Flex]
+	*view.ClusterAwareRefreshableView[*tview.Flex]
 
 	name      string
 	vhost     string
 	queueInfo *rabbithole.DetailedQueueInfo
 
-	cluster  *cluster.Cluster
-	skin     *skins.Skin
-	strategy view.UpdateStrategy
+	skin *skins.Skin
 
 	useScrollableMode bool
 
@@ -104,10 +101,9 @@ func NewQueueDetails(name, vhost string) *QueueDetails {
 	strategy := view.NewLiveUpdateStrategy()
 
 	q := QueueDetails{
-		RefreshableView: view.NewRefreshableView("Queue Details", flex, strategy),
-		name:            name,
-		vhost:           vhost,
-		strategy:        strategy,
+		ClusterAwareRefreshableView: view.NewClusterAwareRefreshableView[*tview.Flex]("Queue Details", flex, strategy),
+		name:                        name,
+		vhost:                       vhost,
 	}
 
 	q.SetUpdateFn(q.performUpdate)
@@ -116,12 +112,11 @@ func NewQueueDetails(name, vhost string) *QueueDetails {
 }
 
 func (q *QueueDetails) Init(app model.App) (err error) {
-	err = q.RefreshableView.Init(app)
+	err = q.ClusterAwareRefreshableView.Init(app)
 	if err != nil {
 		return err
 	}
 
-	q.cluster = q.App().Cluster()
 	q.skin = q.App().Skin()
 
 	// Start in scrollable mode as a safe fallback.
@@ -131,31 +126,6 @@ func (q *QueueDetails) Init(app model.App) (err error) {
 	q.updateTitle()
 
 	return nil
-}
-
-func (q *QueueDetails) Start() {
-	// Если кластер недоступен, приостанавливаем автоматические обновления
-	if !q.cluster.IsAvailable() {
-		q.strategy.Pause()
-	}
-
-	q.RefreshableView.Start()
-	q.cluster.AddListener(q)
-}
-
-func (q *QueueDetails) Stop() {
-	q.cluster.RemoveListener(q)
-	q.RefreshableView.Stop()
-}
-
-func (q *QueueDetails) ClusterConnectionLost(*cluster.Cluster) {
-	q.strategy.Pause()
-	q.RefreshActions()
-}
-
-func (q *QueueDetails) ClusterConnectionRestored(*cluster.Cluster) {
-	q.strategy.Resume()
-	q.RefreshActions()
 }
 
 func (q *QueueDetails) determineLayoutMode() {
@@ -171,7 +141,7 @@ func (q *QueueDetails) determineLayoutMode() {
 }
 
 func (q *QueueDetails) performUpdate(view.UpdateKind) {
-	i, err := q.cluster.GetQueue(q.vhost, q.name)
+	i, err := q.Cluster().GetQueue(q.vhost, q.name)
 	if err != nil {
 		q.App().StatusLine().Error(fmt.Sprintf("Не удалось получить данные очереди: %v", err.Error()))
 		return
