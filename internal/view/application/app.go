@@ -14,6 +14,7 @@ import (
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
 	"tbunny/internal/view/clusters"
+	"tbunny/internal/view/connections"
 	"tbunny/internal/view/exchanges"
 	"tbunny/internal/view/queues"
 	"tbunny/internal/view/users"
@@ -279,6 +280,7 @@ func (a *App) bindKeys() {
 		m.Add(ui.KeyShiftE, ui.NewKeyActionWithGroup("Exchanges", a.goToExchangesCmd, false, 5))
 		m.Add(ui.KeyShiftV, ui.NewKeyActionWithGroup("Virtual hosts", a.goToVHostsCmd, false, 5))
 		m.Add(ui.KeyShiftL, ui.NewKeyActionWithGroup("Clusters", a.goToClustersCmd, false, 5))
+		m.Add(ui.KeyShiftO, ui.NewKeyActionWithGroup("Connections", a.goToConnectionsCmd, false, 5))
 		m.Add(ui.KeyShiftU, ui.NewKeyActionWithGroup("Users", a.goToUsersCmd, false, 5))
 	}
 
@@ -350,6 +352,15 @@ func (a *App) goToVHostsCmd(*tcell.EventKey) *tcell.EventKey {
 	err := a.ReplaceOpenViews(vhosts.NewVHosts())
 	if err != nil {
 		a.statusLine.Error(fmt.Sprintf("Failed to load virtual hosts: %s", err))
+	}
+
+	return nil
+}
+
+func (a *App) goToConnectionsCmd(*tcell.EventKey) *tcell.EventKey {
+	err := a.ReplaceOpenViews(connections.NewConnections())
+	if err != nil {
+		a.statusLine.Error(fmt.Sprintf("Failed to load connections: %s", err))
 	}
 
 	return nil

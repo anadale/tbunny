@@ -72,3 +72,31 @@ func FormatBytes[T int | int32 | int64](bytes T) string {
 	units := []string{"KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
 	return fmt.Sprintf("%.1f %s", float64(bytes)/float64(div), units[exp])
 }
+
+func FormatRate[T float32 | float64](rate T) string {
+	if rate == 0 {
+		return "0 B/s"
+	}
+
+	const unit = 1024
+	if rate < unit {
+		return fmt.Sprintf("%.02f B/s", rate)
+	}
+
+	div, exp := int64(unit), 0
+	for n := int64(rate) / unit; n >= unit; n /= unit {
+		div *= int64(unit)
+		exp++
+	}
+
+	units := []string{"KiB/s", "MiB/s", "GiB/s", "TiB/s", "PiB/s", "EiB/s"}
+	return fmt.Sprintf("%.1f %s", float64(rate)/float64(div), units[exp])
+}
+
+func FormatBool(b bool) string {
+	if b {
+		return "●"
+	}
+
+	return "○"
+}
