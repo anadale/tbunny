@@ -23,6 +23,8 @@ type ResourceTableView[R Resource] struct {
 	resourceProvider ResourceProvider[R]
 	path             string
 	skin             *skins.Skin
+	enterActionTitle string
+	enterActionFn    func(R)
 }
 
 func NewResourceTableView[R Resource](name string, strategy UpdateStrategy) *ResourceTableView[R] {
@@ -46,6 +48,11 @@ func (b *ResourceTableView[R]) SetResourceProvider(rp ResourceProvider[R]) {
 
 func (b *ResourceTableView[R]) SetPath(path string) {
 	b.path = path
+}
+
+func (b *ResourceTableView[R]) SetEnterAction(title string, fn func(R)) {
+	b.enterActionTitle = title
+	b.enterActionFn = fn
 }
 
 func (b *ResourceTableView[R]) AddBindingKeysFn(fn ui.BindingKeysFn) {
@@ -99,9 +106,21 @@ func (b *ResourceTableView[R]) performUpdate(kind UpdateKind) {
 }
 
 func (b *ResourceTableView[R]) bindKeys(km ui.KeyMap) {
+	if b.enterActionTitle != "" {
+		km.Add(tcell.KeyEnter, ui.NewKeyAction(b.enterActionTitle, b.enterCmd))
+	}
+
 	if b.resourceProviderWithCheck().CanDeleteResources() {
 		km.Add(tcell.KeyCtrlD, ui.NewKeyAction("Delete", b.deleteCmd))
 	}
+}
+
+func (b *ResourceTableView[R]) enterCmd(*tcell.EventKey) *tcell.EventKey {
+	if row, ok := b.GetSelectedResource(); ok {
+		b.enterActionFn(row)
+	}
+
+	return nil
 }
 
 func (b *ResourceTableView[R]) deleteCmd(*tcell.EventKey) *tcell.EventKey {

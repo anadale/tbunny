@@ -1,6 +1,10 @@
 package model
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/gdamore/tcell/v2"
+)
 
 type Hint struct {
 	Mnemonic    string
@@ -15,6 +19,10 @@ type Hints []Hint
 func (h Hints) Len() int      { return len(h) }
 func (h Hints) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h Hints) Less(i, j int) bool {
+	if h[i].Mnemonic == tcell.KeyNames[tcell.KeyEnter] {
+		return true
+	}
+
 	m, err1 := strconv.Atoi(h[i].Mnemonic)
 	n, err2 := strconv.Atoi(h[j].Mnemonic)
 	if err1 == nil && err2 == nil {

@@ -31,6 +31,7 @@ type ResourceView[R Resource] interface {
 
 	SetResourceProvider(rp ResourceProvider[R])
 	AddBindingKeysFn(fn ui.BindingKeysFn)
+	SetEnterAction(title string, fn func(R))
 	GetSelectedResource() (row R, ok bool)
 
 	RequestUpdate(kind UpdateKind)

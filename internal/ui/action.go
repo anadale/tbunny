@@ -96,7 +96,6 @@ func (m KeyMap) makeHints(showNonMenu bool) model.Hints {
 				hints = append(hints, model.Hint{
 					Mnemonic:    name,
 					Description: m[k].Description,
-					//Visible:     m[k].Options.Visible,
 				})
 			} else {
 				slog.Error("Failed to get mnemonic for key", sl.Key, k)
