@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"slices"
 	"tbunny/internal/rmq"
+	"tbunny/internal/skins"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
 	"tbunny/internal/ui/dialog"
@@ -206,10 +207,9 @@ func (q *Queues) purgeQueueCmd(*tcell.EventKey) *tcell.EventKey {
 	}
 
 	msg := fmt.Sprintf("Purge %s?", queue.GetDisplayName())
-	dialogSkin := q.App().Skin().Dialog
 
 	modal := dialog.CreateConfirmDialog(
-		&dialogSkin,
+		skins.Current(),
 		"Confirm Purge",
 		msg,
 		func() {

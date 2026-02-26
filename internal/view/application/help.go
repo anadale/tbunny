@@ -20,8 +20,7 @@ const helpTitle = " [aqua::b]Help "
 type Help struct {
 	*view.View[*tview.Table]
 
-	app  *App
-	skin *skins.Skin
+	app *App
 }
 
 func NewHelp(app *App) *Help {
@@ -47,15 +46,27 @@ func (h *Help) Init(app model.App) error {
 	h.build()
 
 	h.AddBindingKeysFn(h.bindKeys)
-	app.SkinManager().AddListener(h)
-	h.SkinChanged(app.SkinManager().Skin)
+	skins.AddListener(h)
+	h.SkinChanged(skins.Current())
 
 	return nil
 }
 
+func (h *Help) Start() {
+	h.View.Start()
+
+	skins.AddListener(h)
+	h.SkinChanged(skins.Current())
+}
+
+func (h *Help) Stop() {
+	skins.RemoveListener(h)
+
+	h.View.Stop()
+}
+
 func (h *Help) SkinChanged(skin *skins.Skin) {
-	h.skin = skin
-	h.updateStyles()
+	h.updateStyles(skin)
 }
 
 func (h *Help) bindKeys(km ui.KeyMap) {
@@ -178,16 +189,16 @@ func (h *Help) navigationHints() (string, model.Hints) {
 	}
 }
 
-func (h *Help) updateStyles() {
-	h.Ui().SetBackgroundColor(h.skin.BgColor())
+func (h *Help) updateStyles(skin *skins.Skin) {
+	h.Ui().SetBackgroundColor(skin.BgColor())
 
 	var (
 		t       = h.Ui()
-		style   = tcell.StyleDefault.Background(h.skin.Help.BgColor.Color())
-		key     = style.Foreground(h.skin.Help.KeyColor.Color()).Bold(true)
-		numKey  = style.Foreground(h.skin.Help.NumKeyColor.Color()).Bold(true)
-		info    = style.Foreground(h.skin.Help.FgColor.Color())
-		heading = style.Foreground(h.skin.Help.SectionColor.Color()).Bold(true)
+		style   = tcell.StyleDefault.Background(skin.Help.BgColor.Color())
+		key     = style.Foreground(skin.Help.KeyColor.Color()).Bold(true)
+		numKey  = style.Foreground(skin.Help.NumKeyColor.Color()).Bold(true)
+		info    = style.Foreground(skin.Help.FgColor.Color())
+		heading = style.Foreground(skin.Help.SectionColor.Color()).Bold(true)
 	)
 
 	for col := range t.GetColumnCount() {

@@ -16,13 +16,13 @@ type Crumbs struct {
 	viewNames []string
 }
 
-func NewCrumbs(skm *skins.Manager) *Crumbs {
+func NewCrumbs() *Crumbs {
 	c := Crumbs{
 		TextView: tview.NewTextView(),
 	}
 
-	skm.AddListener(&c)
-	c.SkinChanged(skm.Skin)
+	skins.AddListener(&c)
+	c.SkinChanged(skins.Current())
 
 	c.SetTextAlign(tview.AlignLeft)
 	c.SetBorderPadding(0, 0, 1, 1)

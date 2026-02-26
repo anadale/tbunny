@@ -11,8 +11,6 @@ import (
 type PublishMessageFn func(vhost, queue string, props map[string]any, payload string, payloadEncoding rmq.PayloadEncoding)
 
 func ShowPublishMessageDialog(app model.App, vhost, queue string, okFn PublishMessageFn) {
-	skin := app.Skin().Dialog
-
 	f := ui.NewModalForm()
 
 	f.AddDropDown("Delivery mode:", []string{rmq.MessageDeliveryModeNonPersistent.String(), rmq.MessageDeliveryModePersistent.String()}, 0, nil)
@@ -57,7 +55,7 @@ func ShowPublishMessageDialog(app model.App, vhost, queue string, okFn PublishMe
 		okFn(vhost, queue, props, payloadField.GetText(), rmq.PayloadEncoding(payloadEncoding))
 	})
 
-	f.SetTitle("Publish message").ApplySkin(&skin)
+	f.SetTitle("Publish message")
 
 	const modalHeight = 17
 

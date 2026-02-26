@@ -11,7 +11,6 @@ import (
 type EditUserFn func(changePassword bool, password, tags string)
 
 func ShowEditUserDialog(app model.App, name, tags string, okFn EditUserFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddCheckbox("Change password:", false, nil)
@@ -62,7 +61,7 @@ func ShowEditUserDialog(app model.App, name, tags string, okFn EditUserFn) {
 		okFn(changePassword, password, strings.TrimSpace(tags))
 	})
 
-	f.SetTitle("Edit users " + name).ApplySkin(&skin)
+	f.SetTitle("Edit users " + name)
 
 	modal := ui.NewModalDialog(f, 60, 10)
 	app.ShowModal(modal)

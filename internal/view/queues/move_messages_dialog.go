@@ -12,7 +12,6 @@ import (
 type MoveMessagesFn func(vhost, sourceQueue, destinationQueue string)
 
 func ShowMoveMessagesDialog(app model.App, vhost, sourceQueue string, destinationQueues []string, okFn MoveMessagesFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddInputField("Destination queue:", "", 30, nil, nil)
@@ -47,7 +46,7 @@ func ShowMoveMessagesDialog(app model.App, vhost, sourceQueue string, destinatio
 		okFn(vhost, sourceQueue, destinationQueue)
 	})
 
-	f.SetTitle(fmt.Sprintf("Move messages from %s", sourceQueue)).ApplySkin(&skin)
+	f.SetTitle(fmt.Sprintf("Move messages from %s", sourceQueue))
 
 	modal := ui.NewModalDialog(f, 60, 7)
 	app.ShowModal(modal)

@@ -11,7 +11,6 @@ import (
 type CreateUserFn func(name, password, tags string)
 
 func ShowCreateUserDialog(app model.App, okFn CreateUserFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddInputField("User name:", "", 30, nil, nil)
@@ -54,7 +53,7 @@ func ShowCreateUserDialog(app model.App, okFn CreateUserFn) {
 		okFn(name, password, strings.TrimSpace(tags))
 	})
 
-	f.SetTitle("Create users").ApplySkin(&skin)
+	f.SetTitle("Create users")
 
 	modal := ui.NewModalDialog(f, 60, 10)
 	app.ShowModal(modal)

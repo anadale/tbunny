@@ -31,43 +31,43 @@ func NewModalForm() *ModalForm {
 }
 
 // ApplySkin applies the provided skin to the form.
-func (f *ModalForm) ApplySkin(skin *skins.Dialog) *ModalForm {
-	f.SetButtonBackgroundColor(skin.ButtonBgColor.Color()).
-		SetButtonTextColor(skin.ButtonFgColor.Color()).
-		SetLabelColor(skin.LabelFgColor.Color()).
-		SetFieldBackgroundColor(skin.BgColor.Color()).
-		SetFieldTextColor(skin.FieldFgColor.Color())
+func (f *ModalForm) ApplySkin(skin *skins.Skin) {
+	dialogSkin := skin.Dialog
+
+	f.SetButtonBackgroundColor(dialogSkin.ButtonBgColor.Color()).
+		SetButtonTextColor(dialogSkin.ButtonFgColor.Color()).
+		SetLabelColor(dialogSkin.LabelFgColor.Color()).
+		SetFieldBackgroundColor(dialogSkin.BgColor.Color()).
+		SetFieldTextColor(dialogSkin.FieldFgColor.Color())
 
 	for i := 0; i < f.GetFormItemCount(); i++ {
 		item := f.GetFormItem(i)
 
 		if dropDown, ok := item.(*tview.DropDown); ok {
 			dropDown.SetListStyles(
-				tcell.StyleDefault.Foreground(skin.DropdownFgColor.Color()).Background(skin.DropdownBgColor.Color()),
-				tcell.StyleDefault.Foreground(skin.DropdownFocusFgColor.Color()).Background(skin.DropdownFocusBgColor.Color()))
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFgColor.Color()).Background(dialogSkin.DropdownBgColor.Color()),
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFocusFgColor.Color()).Background(dialogSkin.DropdownFocusBgColor.Color()))
 		}
 
 		if inputField, ok := item.(*tview.InputField); ok {
 			inputField.SetAutocompleteStyles(
-				skin.DropdownBgColor.Color(),
-				tcell.StyleDefault.Foreground(skin.DropdownFgColor.Color()).Background(skin.DropdownBgColor.Color()),
-				tcell.StyleDefault.Foreground(skin.DropdownFocusFgColor.Color()).Background(skin.DropdownFocusBgColor.Color()))
+				dialogSkin.DropdownBgColor.Color(),
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFgColor.Color()).Background(dialogSkin.DropdownBgColor.Color()),
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFocusFgColor.Color()).Background(dialogSkin.DropdownFocusBgColor.Color()))
 		}
 
 		if arguments, ok := item.(*Arguments); ok {
 			arguments.SetListStyles(
-				tcell.StyleDefault.Foreground(skin.DropdownFgColor.Color()).Background(skin.DropdownBgColor.Color()),
-				tcell.StyleDefault.Foreground(skin.DropdownFocusFgColor.Color()).Background(skin.DropdownFocusBgColor.Color()))
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFgColor.Color()).Background(dialogSkin.DropdownBgColor.Color()),
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFocusFgColor.Color()).Background(dialogSkin.DropdownFocusBgColor.Color()))
 		}
 
 		if properties, ok := item.(*Properties); ok {
 			properties.SetListStyles(
-				tcell.StyleDefault.Foreground(skin.DropdownFgColor.Color()).Background(skin.DropdownBgColor.Color()),
-				tcell.StyleDefault.Foreground(skin.DropdownFocusFgColor.Color()).Background(skin.DropdownFocusBgColor.Color()))
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFgColor.Color()).Background(dialogSkin.DropdownBgColor.Color()),
+				tcell.StyleDefault.Foreground(dialogSkin.DropdownFocusFgColor.Color()).Background(dialogSkin.DropdownFocusBgColor.Color()))
 		}
 	}
-
-	return f
 }
 
 // SetDoneFunc sets a handler which is called when one of the buttons was

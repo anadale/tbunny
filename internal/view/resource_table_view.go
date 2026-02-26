@@ -3,7 +3,6 @@ package view
 import (
 	"fmt"
 	"strings"
-	"tbunny/internal/model"
 	"tbunny/internal/skins"
 	"tbunny/internal/ui"
 	"tbunny/internal/ui/dialog"
@@ -22,7 +21,6 @@ type ResourceTableView[R Resource] struct {
 
 	resourceProvider ResourceProvider[R]
 	path             string
-	skin             *skins.Skin
 	enterActionTitle string
 	enterActionFn    func(R)
 }
@@ -59,24 +57,20 @@ func (b *ResourceTableView[R]) AddBindingKeysFn(fn ui.BindingKeysFn) {
 	b.RefreshableView.AddBindingKeysFn(fn)
 }
 
-func (b *ResourceTableView[R]) Init(app model.App) (err error) {
-	err = b.RefreshableView.Init(app)
-	if err != nil {
-		return err
-	}
+func (b *ResourceTableView[R]) Start() {
+	b.RefreshableView.Start()
 
-	skm := b.App().SkinManager()
+	skins.AddListener(b)
+	b.SkinChanged(skins.Current())
+}
 
-	b.Ui().Init(skm)
-
-	b.skin = skm.Skin
-	skm.AddListener(b)
-
-	return nil
+func (b *ResourceTableView[R]) Stop() {
+	b.RefreshableView.Stop()
+	skins.RemoveListener(b)
 }
 
 func (b *ResourceTableView[R]) SkinChanged(skin *skins.Skin) {
-	b.skin = skin
+	b.Ui().ApplySkin(skin)
 	b.updateTitle()
 }
 
@@ -134,10 +128,9 @@ func (b *ResourceTableView[R]) deleteCmd(*tcell.EventKey) *tcell.EventKey {
 
 	displayName := row.GetDisplayName()
 	msg := fmt.Sprintf("Delete %s?", displayName)
-	dialogSkin := b.skin.Dialog
 
 	modal := dialog.CreateConfirmDialog(
-		&dialogSkin,
+		skins.Current(),
 		"Confirm Delete",
 		msg,
 		func() {
@@ -178,7 +171,7 @@ func (b *ResourceTableView[R]) updateTitle() {
 	sb.WriteString(fmt.Sprintf(titleCountFragmentFmt, count))
 	sb.WriteString(" ")
 
-	b.Ui().SetTitle(SkinTitle(sb.String(), &b.skin.Frame))
+	b.Ui().SetTitle(SkinTitle(sb.String()))
 }
 
 func (b *ResourceTableView[R]) resourceProviderWithCheck() ResourceProvider[R] {

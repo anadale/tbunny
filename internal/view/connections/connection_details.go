@@ -50,7 +50,7 @@ func (v *ConnectionDetails) Init(app model.App) error {
 		return err
 	}
 
-	v.skin = v.App().SkinManager().Skin
+	v.skin = skins.Current()
 	v.updateTitle()
 
 	return nil
@@ -71,7 +71,7 @@ func (v *ConnectionDetails) performUpdate(view.UpdateKind) {
 }
 
 func (v *ConnectionDetails) updateTitle() {
-	title := view.SkinTitle(fmt.Sprintf(ConnectionDetailsTitleFmt, v.Name(), v.name), &v.skin.Frame)
+	title := view.SkinTitle(fmt.Sprintf(ConnectionDetailsTitleFmt, v.Name(), v.name))
 
 	v.Ui().SetTitle(title)
 }

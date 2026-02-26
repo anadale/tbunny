@@ -32,12 +32,12 @@ func NewMenu(app *App) *Menu {
 	m := Menu{
 		Table: tview.NewTable(),
 		app:   app,
-		skin:  app.SkinManager().Skin,
+		skin:  skins.Current(),
 	}
 
 	app.content.AddListener(&m)
 
-	app.SkinManager().AddListener(&m)
+	skins.AddListener(&m)
 	m.SetBackgroundColor(m.skin.BgColor())
 
 	return &m

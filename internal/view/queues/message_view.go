@@ -3,7 +3,6 @@ package queues
 import (
 	"fmt"
 	"strings"
-	"tbunny/internal/model"
 	"tbunny/internal/rmq"
 	"tbunny/internal/skins"
 	"tbunny/internal/ui"
@@ -47,36 +46,30 @@ func NewMessageView(message *MessageResource) *MessageView {
 	return &v
 }
 
-func (v *MessageView) Init(app model.App) (err error) {
-	err = v.View.Init(app)
-	if err != nil {
-		return err
-	}
-
-	skm := v.App().SkinManager()
-
-	v.skin = skm.Skin
-	skm.AddListener(v)
-
-	return nil
-}
-
 func (v *MessageView) Start() {
 	v.View.Start()
 
-	v.updateText()
-	v.updateTitle()
+	v.SkinChanged(skins.Current())
+	skins.AddListener(v)
+}
+
+func (v *MessageView) Stop() {
+	skins.RemoveListener(v)
+
+	v.View.Stop()
 }
 
 func (v *MessageView) SkinChanged(skin *skins.Skin) {
 	v.skin = skin
+
 	v.updateTitle()
+	v.updateText()
 }
 
 func (v *MessageView) updateTitle() {
 	var title string
 
-	title = view.SkinTitle(fmt.Sprintf(MessageViewTitleFmt, v.Name(), v.message.index), &v.skin.Frame)
+	title = view.SkinTitle(fmt.Sprintf(MessageViewTitleFmt, v.Name(), v.message.index))
 
 	v.Ui().SetTitle(title)
 }

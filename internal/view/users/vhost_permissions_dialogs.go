@@ -10,7 +10,6 @@ import (
 type VhostPermissionsFn func(vhost, configure, write, read string)
 
 func ShowCreateVhostPermissionsDialog(app model.App, availableVhosts []string, okFn VhostPermissionsFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddDropDown("Virtual host:", availableVhosts, 0, nil)
@@ -39,14 +38,13 @@ func ShowCreateVhostPermissionsDialog(app model.App, availableVhosts []string, o
 		okFn(vhost, configure, write, read)
 	})
 
-	f.SetTitle("Create permissions").ApplySkin(&skin)
+	f.SetTitle("Create permissions")
 
 	modal := ui.NewModalDialog(f, 60, 10)
 	app.ShowModal(modal)
 }
 
 func ShowEditVhostPermissionsDialog(app model.App, vhost, configure, write, read string, okFn VhostPermissionsFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddInputField("Virtual host:", vhost, 30, nil, nil)
@@ -76,7 +74,7 @@ func ShowEditVhostPermissionsDialog(app model.App, vhost, configure, write, read
 		okFn(vhost, configure, write, read)
 	})
 
-	f.SetTitle("Edit permissions").ApplySkin(&skin)
+	f.SetTitle("Edit permissions")
 
 	modal := ui.NewModalDialog(f, 60, 10)
 	app.ShowModal(modal)

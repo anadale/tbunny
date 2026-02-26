@@ -117,7 +117,7 @@ func (q *QueueDetails) Init(app model.App) (err error) {
 		return err
 	}
 
-	q.skin = q.App().Skin()
+	q.skin = skins.Current()
 
 	// Start in scrollable mode as a safe fallback.
 	// The actual mode is determined on the first update.
@@ -267,7 +267,7 @@ func (q *QueueDetails) updateColumnarView() {
 }
 
 func (q *QueueDetails) updateTitle() {
-	title := view.SkinTitle(fmt.Sprintf(QueueDetailsTitleFmt, q.Name(), fmt.Sprintf("%s:%s", q.vhost, q.name)), &q.skin.Frame)
+	title := view.SkinTitle(fmt.Sprintf(QueueDetailsTitleFmt, q.Name(), fmt.Sprintf("%s:%s", q.vhost, q.name)))
 
 	q.Ui().SetTitle(title)
 }

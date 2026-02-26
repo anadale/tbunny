@@ -3,7 +3,6 @@ package model
 import (
 	"tbunny/internal/cluster"
 	"tbunny/internal/config"
-	"tbunny/internal/skins"
 
 	"github.com/rivo/tview"
 )
@@ -54,11 +53,9 @@ type App interface {
 
 	Cluster() *cluster.Cluster
 	Config() *config.Config
-	Skin() *skins.Skin
 
 	ClusterManager() *cluster.Manager
 	ConfigManager() *config.Manager
-	SkinManager() *skins.Manager
 
 	// Actions returns global application key actions.
 	Actions() KeyMap

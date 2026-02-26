@@ -10,7 +10,6 @@ import (
 type TopicPermissionsFn func(vhost, exchange, write, read string)
 
 func ShowCreateTopicPermissionsDialog(app model.App, vhosts []string, fetchExchanges func(vhost string) []string, okFn TopicPermissionsFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddDropDown("Virtual host:", vhosts, 0, nil)
@@ -48,14 +47,13 @@ func ShowCreateTopicPermissionsDialog(app model.App, vhosts []string, fetchExcha
 		okFn(vhost, exchange, write, read)
 	})
 
-	f.SetTitle("Create topic permissions").ApplySkin(&skin)
+	f.SetTitle("Create topic permissions")
 
 	modal := ui.NewModalDialog(f, 60, 10)
 	app.ShowModal(modal)
 }
 
 func ShowEditTopicPermissionsDialog(app model.App, vhost, exchange, write, read string, okFn TopicPermissionsFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddInputField("Virtual host:", vhost, 30, nil, nil)
@@ -85,7 +83,7 @@ func ShowEditTopicPermissionsDialog(app model.App, vhost, exchange, write, read 
 		okFn(vhost, exchange, write, read)
 	})
 
-	f.SetTitle("Edit topic permissions").ApplySkin(&skin)
+	f.SetTitle("Edit topic permissions")
 
 	modal := ui.NewModalDialog(f, 60, 10)
 	app.ShowModal(modal)

@@ -42,12 +42,6 @@ func NewTable[R TableRow]() *Table[R] {
 	return &t
 }
 
-func (t *Table[R]) Init(skm *skins.Manager) {
-	skm.AddListener(t)
-
-	t.SkinChanged(skm.Skin)
-}
-
 func (t *Table[R]) Reset() {
 	t.rows = nil
 }
@@ -91,7 +85,7 @@ func (t *Table[R]) GetSelectedRow() (row R, ok bool) {
 	return t.rows[rowIdx-1], true
 }
 
-func (t *Table[R]) SkinChanged(skin *skins.Skin) {
+func (t *Table[R]) ApplySkin(skin *skins.Skin) {
 	t.skin = skin
 
 	s := skin.Views.Table

@@ -31,8 +31,8 @@ func NewHeader(app *App) *Header {
 	h.AddItem(h.ClusterInfo, clusterInfoWidth, 1, false)
 	h.AddItem(h.Menu, 0, 1, false)
 
-	app.SkinManager().AddListener(&h)
-	h.SkinChanged(app.SkinManager().Skin)
+	skins.AddListener(&h)
+	h.SkinChanged(skins.Current())
 
 	return &h
 }

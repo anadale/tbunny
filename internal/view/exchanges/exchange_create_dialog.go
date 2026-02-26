@@ -14,8 +14,6 @@ import (
 type CreateExchangeFn func(exchangeType, vhost, name string, durable, autoDelete bool, args map[string]any)
 
 func ShowCreateExchangeDialog(app model.App, okFn CreateExchangeFn) {
-	skin := app.Skin().Dialog
-
 	f := ui.NewModalForm()
 
 	virtualHostNames := utils.Map(app.Cluster().VirtualHosts(), func(vh rabbithole.VhostInfo) string { return vh.Name })
@@ -57,7 +55,7 @@ func ShowCreateExchangeDialog(app model.App, okFn CreateExchangeFn) {
 		okFn(strings.ToLower(exchangeType), vhost, name, durability == "Durable", autoDelete, argsField.GetValue())
 	})
 
-	f.SetTitle("Create exchange").ApplySkin(&skin)
+	f.SetTitle("Create exchange")
 
 	modal := ui.NewModalDialog(f, 80, 11+argsField.GetFieldHeight())
 	app.ShowModal(modal)

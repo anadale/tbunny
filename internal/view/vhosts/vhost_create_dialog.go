@@ -11,8 +11,6 @@ import (
 type CreateVHostFn func(name, description, tags, queueType string, tracing bool)
 
 func ShowCreateVHostDialog(app model.App, okFn CreateVHostFn) {
-	skin := app.Skin().Dialog
-
 	f := ui.NewModalForm()
 
 	f.AddInputField("Virtual host name:", "", 30, nil, nil)
@@ -44,7 +42,7 @@ func ShowCreateVHostDialog(app model.App, okFn CreateVHostFn) {
 		okFn(name, description, tags, queueType, tracing)
 	})
 
-	f.SetTitle("Create virtual host").ApplySkin(&skin)
+	f.SetTitle("Create virtual host")
 
 	modal := ui.NewModalDialog(f, 60, 11)
 	app.ShowModal(modal)

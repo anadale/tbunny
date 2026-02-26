@@ -14,8 +14,6 @@ import (
 type CreateQueueFn func(queueType, vhost, name string, durable bool, args map[string]any)
 
 func ShowCreateQueueDialog(app model.App, okFn CreateQueueFn) {
-	skin := app.Skin().Dialog
-
 	f := ui.NewModalForm()
 
 	virtualHostNames := utils.Map(app.Cluster().VirtualHosts(), func(vh rabbithole.VhostInfo) string { return vh.Name })
@@ -60,7 +58,7 @@ func ShowCreateQueueDialog(app model.App, okFn CreateQueueFn) {
 		okFn(queueType, vhost, name, durability == "Durable", args.GetValue())
 	})
 
-	f.SetTitle("Create queue").ApplySkin(&skin)
+	f.SetTitle("Create queue")
 
 	modal := ui.NewModalDialog(f, 80, 10+args.GetFieldHeight())
 	app.ShowModal(modal)

@@ -37,11 +37,9 @@ type App struct {
 
 	cluster *cluster.Cluster
 	config  *config.Config
-	skin    *skins.Skin
 
 	clusterManager *cluster.Manager
 	configManager  *config.Manager
-	skinManager    *skins.Manager
 
 	Version string
 
@@ -62,15 +60,13 @@ type App struct {
 	statusLineUi *ui.StatusLine
 }
 
-func NewApp(clm *cluster.Manager, cfm *config.Manager, skm *skins.Manager, version string) *App {
+func NewApp(clm *cluster.Manager, cfm *config.Manager, version string) *App {
 	a := App{
 		Application:    tview.NewApplication(),
 		statusLine:     model.NewStatusLine(model.DefaultStatusLineDelay),
 		config:         cfm.Config(),
-		skin:           skm.Skin,
 		clusterManager: clm,
 		configManager:  cfm,
-		skinManager:    skm,
 		Version:        version,
 		headerVisible:  true,
 		crumbsVisible:  true,
@@ -79,16 +75,18 @@ func NewApp(clm *cluster.Manager, cfm *config.Manager, skm *skins.Manager, versi
 	a.content = NewViewStack(&a)
 	a.main = tview.NewPages()
 	a.header = NewHeader(&a)
-	a.crumbs = ui.NewCrumbs(skm)
+	a.crumbs = ui.NewCrumbs()
 	a.statusLineUi = ui.NewStatusLine(&a)
 
 	clm.AddListener(&a)
 	cfm.AddListener(&a)
-	skm.AddListener(&a)
+	skins.AddListener(&a)
 
 	flex := tview.NewFlex().SetDirection(tview.FlexRow)
 	a.main.AddPage(mainPageName, flex, true, false)
-	a.main.AddPage(splashPageName, ui.NewSplash(a.skin, a.Version), true, true)
+	a.main.AddPage(splashPageName, ui.NewSplash(skins.Current(), a.Version), true, true)
+
+	a.SkinChanged(skins.Current())
 
 	return &a
 }
@@ -105,20 +103,12 @@ func (a *App) ConfigManager() *config.Manager {
 	return a.configManager
 }
 
-func (a *App) SkinManager() *skins.Manager {
-	return a.skinManager
-}
-
 func (a *App) Cluster() *cluster.Cluster {
 	return a.cluster
 }
 
 func (a *App) Config() *config.Config {
 	return a.config
-}
-
-func (a *App) Skin() *skins.Skin {
-	return a.skin
 }
 
 func (a *App) Actions() model.KeyMap {
@@ -196,12 +186,9 @@ func (a *App) ConfigChanged(cfg *config.Config) {
 }
 
 func (a *App) SkinChanged(skin *skins.Skin) {
-	a.skin = skin
-
 	bgColor := skin.BgColor()
 
 	a.main.SetBackgroundColor(bgColor)
-
 	a.contentFlex().SetBackgroundColor(bgColor)
 }
 

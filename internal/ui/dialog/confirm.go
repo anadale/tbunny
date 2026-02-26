@@ -7,19 +7,21 @@ import (
 	"github.com/rivo/tview"
 )
 
-func CreateConfirmDialog(skin *skins.Dialog, title, msg string, confirmFn func(), closeFn func()) tview.Primitive {
+func CreateConfirmDialog(skin *skins.Skin, title, msg string, confirmFn func(), closeFn func()) tview.Primitive {
+	dialogSkin := skin.Dialog
+
 	abs := tcell.StyleDefault.
-		Foreground(skin.ButtonFocusFgColor.Color()).
-		Background(skin.ButtonFocusBgColor.Color())
+		Foreground(dialogSkin.ButtonFocusFgColor.Color()).
+		Background(dialogSkin.ButtonFocusBgColor.Color())
 
 	modal := tview.NewModal().
-		SetButtonBackgroundColor(skin.ButtonBgColor.Color()).
-		SetButtonTextColor(skin.ButtonFgColor.Color()).
-		SetBackgroundColor(skin.BgColor.Color()).
-		SetTextColor(skin.FgColor.Color()).
+		SetButtonBackgroundColor(dialogSkin.ButtonBgColor.Color()).
+		SetButtonTextColor(dialogSkin.ButtonFgColor.Color()).
+		SetBackgroundColor(dialogSkin.BgColor.Color()).
+		SetTextColor(dialogSkin.FgColor.Color()).
 		SetButtonActivatedStyle(abs)
 
-	modal.SetText(msg).SetTitle("<" + title + ">")
+	modal.SetText(msg).SetTitle(" " + title + " ")
 	modal.AddButtons([]string{"Cancel", "OK"})
 
 	modal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {

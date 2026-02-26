@@ -13,8 +13,6 @@ type CreateBindingFn func(otherType SubjectType, otherName, routingKey string, a
 type AutocompleteFn func() ([]string, error)
 
 func ShowCreateBindingDialog(app model.App, subjectType SubjectType, exchangesFn, queuesFn AutocompleteFn, okFn CreateBindingFn) {
-	skin := app.Skin().Dialog
-
 	f := ui.NewModalForm()
 
 	var exchanges []string
@@ -128,7 +126,7 @@ func ShowCreateBindingDialog(app model.App, subjectType SubjectType, exchangesFn
 		okFn(otherType, otherName, routingKey, argsField.GetValue())
 	})
 
-	f.SetTitle("Create binding").ApplySkin(&skin)
+	f.SetTitle("Create binding")
 
 	modal := ui.NewModalDialog(f, 80, 6+fieldsCount+argsField.GetFieldHeight())
 	app.ShowModal(modal)

@@ -23,7 +23,9 @@ func ExchangeDisplayName(exchange string) string {
 }
 
 // SkinTitle decorates a title.
-func SkinTitle(format string, style *skins.Frame) string {
+func SkinTitle(format string) string {
+	style := skins.Current().Frame
+
 	bgColor := style.Title.BgColor
 	if bgColor == skins.DefaultColor {
 		bgColor = skins.TransparentColor

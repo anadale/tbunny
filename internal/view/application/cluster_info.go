@@ -28,10 +28,10 @@ func NewClusterInfo(app *App) *ClusterInfo {
 	c.reset()
 
 	c.ClusterChanged(c.app.ClusterManager().Cluster())
-	c.SkinChanged(c.app.SkinManager().Skin)
+	c.SkinChanged(skins.Current())
 
 	app.ClusterManager().AddListener(&c)
-	app.SkinManager().AddListener(&c)
+	skins.AddListener(&c)
 
 	return &c
 }
@@ -122,7 +122,7 @@ func (c *ClusterInfo) setCell(row int, s string) int {
 }
 
 func (c *ClusterInfo) updateStyles() {
-	skin := c.app.SkinManager().Skin
+	skin := skins.Current()
 
 	sectionColor := skin.Info.SectionColor.Color()
 	fgColor := skin.Info.FgColor.Color()

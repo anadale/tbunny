@@ -7,7 +7,6 @@ import (
 	"runtime/debug"
 	"tbunny/internal/cluster"
 	"tbunny/internal/config"
-	"tbunny/internal/skins"
 	"tbunny/internal/sl"
 	"tbunny/internal/view/application"
 	"time"
@@ -86,9 +85,8 @@ func run(*cobra.Command, []string) error {
 
 	cfm := loadConfiguration()
 	clm := createClusterManager(cfm)
-	skm := loadSkins()
 
-	app := application.NewApp(clm, cfm, skm, version)
+	app := application.NewApp(clm, cfm, version)
 
 	if err := app.Init(); err != nil {
 		return err
@@ -118,8 +116,4 @@ func createClusterManager(cfm *config.Manager) *cluster.Manager {
 	}
 
 	return clm
-}
-
-func loadSkins() *skins.Manager {
-	return skins.NewSkinManager()
 }

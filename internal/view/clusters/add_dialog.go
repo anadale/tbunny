@@ -15,7 +15,6 @@ import (
 type AddClusterFn func(name string, parameters cluster.ConnectionParameters)
 
 func ShowAddClusterDialog(app model.App, okFn AddClusterFn) {
-	skin := app.Skin().Dialog
 	f := ui.NewModalForm()
 
 	f.AddInputField("Name:", "", 30, nil, nil)
@@ -72,7 +71,7 @@ func ShowAddClusterDialog(app model.App, okFn AddClusterFn) {
 		okFn(name, params)
 	})
 
-	f.SetTitle("Add cluster").ApplySkin(&skin)
+	f.SetTitle("Add cluster")
 
 	modal := ui.NewModalDialog(f, 60, 10)
 	app.ShowModal(modal)

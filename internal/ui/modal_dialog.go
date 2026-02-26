@@ -1,6 +1,10 @@
 package ui
 
-import "github.com/rivo/tview"
+import (
+	"tbunny/internal/skins"
+
+	"github.com/rivo/tview"
+)
 
 type ModalDialog struct {
 	*tview.Flex
@@ -9,11 +13,19 @@ type ModalDialog struct {
 	primitive tview.Primitive
 }
 
+type Skinnable interface {
+	ApplySkin(skin *skins.Skin)
+}
+
 func NewModalDialog(primitive tview.Primitive, width, height int) *ModalDialog {
 	d := ModalDialog{
 		Flex:      tview.NewFlex(),
 		centerRow: tview.NewFlex().SetDirection(tview.FlexRow),
 		primitive: primitive,
+	}
+
+	if skinnable, ok := primitive.(Skinnable); ok {
+		skinnable.ApplySkin(skins.Current())
 	}
 
 	d.centerRow.
