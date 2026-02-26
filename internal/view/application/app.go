@@ -39,7 +39,6 @@ type App struct {
 	config  *config.Config
 
 	clusterManager *cluster.Manager
-	configManager  *config.Manager
 
 	Version string
 
@@ -60,13 +59,12 @@ type App struct {
 	statusLineUi *ui.StatusLine
 }
 
-func NewApp(clm *cluster.Manager, cfm *config.Manager, version string) *App {
+func NewApp(clm *cluster.Manager, version string) *App {
 	a := App{
 		Application:    tview.NewApplication(),
 		statusLine:     model.NewStatusLine(model.DefaultStatusLineDelay),
-		config:         cfm.Config(),
+		config:         config.Current(),
 		clusterManager: clm,
-		configManager:  cfm,
 		Version:        version,
 		headerVisible:  true,
 		crumbsVisible:  true,
@@ -79,7 +77,7 @@ func NewApp(clm *cluster.Manager, cfm *config.Manager, version string) *App {
 	a.statusLineUi = ui.NewStatusLine(&a)
 
 	clm.AddListener(&a)
-	cfm.AddListener(&a)
+	config.AddListener(&a)
 	skins.AddListener(&a)
 
 	flex := tview.NewFlex().SetDirection(tview.FlexRow)
@@ -99,16 +97,8 @@ func (a *App) ClusterManager() *cluster.Manager {
 	return a.clusterManager
 }
 
-func (a *App) ConfigManager() *config.Manager {
-	return a.configManager
-}
-
 func (a *App) Cluster() *cluster.Cluster {
 	return a.cluster
-}
-
-func (a *App) Config() *config.Config {
-	return a.config
 }
 
 func (a *App) Actions() model.KeyMap {

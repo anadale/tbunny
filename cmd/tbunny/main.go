@@ -83,10 +83,10 @@ func run(*cobra.Command, []string) error {
 
 	slog.SetDefault(slog.New(logHandler))
 
-	cfm := loadConfiguration()
-	clm := createClusterManager(cfm)
+	config.Init(configDir)
+	clm := createClusterManager()
 
-	app := application.NewApp(clm, cfm, version)
+	app := application.NewApp(clm, version)
 
 	if err := app.Init(); err != nil {
 		return err
@@ -101,12 +101,8 @@ func run(*cobra.Command, []string) error {
 	return nil
 }
 
-func loadConfiguration() *config.Manager {
-	return config.NewManager(configDir)
-}
-
-func createClusterManager(cfm *config.Manager) *cluster.Manager {
-	clm := cluster.NewManager(cfm.ConfigDir())
+func createClusterManager() *cluster.Manager {
+	clm := cluster.NewManager(config.RootDirectory())
 
 	activeClusterName := clm.GetActiveClusterName()
 	if activeClusterName != "" {
