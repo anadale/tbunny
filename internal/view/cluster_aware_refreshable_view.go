@@ -29,7 +29,7 @@ func (v *ClusterAwareRefreshableView[U]) Init(app model.App) (err error) {
 		return err
 	}
 
-	v.cluster = v.App().ClusterManager().Cluster()
+	v.cluster = cluster.Current()
 	if v.cluster == nil {
 		panic("cluster expected not to be nil")
 	}

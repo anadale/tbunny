@@ -38,8 +38,6 @@ type App struct {
 	cluster *cluster.Cluster
 	config  *config.Config
 
-	clusterManager *cluster.Manager
-
 	Version string
 
 	cancelFn context.CancelFunc
@@ -59,15 +57,14 @@ type App struct {
 	statusLineUi *ui.StatusLine
 }
 
-func NewApp(clm *cluster.Manager, version string) *App {
+func NewApp(version string) *App {
 	a := App{
-		Application:    tview.NewApplication(),
-		statusLine:     model.NewStatusLine(model.DefaultStatusLineDelay),
-		config:         config.Current(),
-		clusterManager: clm,
-		Version:        version,
-		headerVisible:  true,
-		crumbsVisible:  true,
+		Application:   tview.NewApplication(),
+		statusLine:    model.NewStatusLine(model.DefaultStatusLineDelay),
+		config:        config.Current(),
+		Version:       version,
+		headerVisible: true,
+		crumbsVisible: true,
 	}
 
 	a.content = NewViewStack(&a)
@@ -76,7 +73,7 @@ func NewApp(clm *cluster.Manager, version string) *App {
 	a.crumbs = ui.NewCrumbs()
 	a.statusLineUi = ui.NewStatusLine(&a)
 
-	clm.AddListener(&a)
+	cluster.AddListener(&a)
 	config.AddListener(&a)
 	skins.AddListener(&a)
 
@@ -91,14 +88,6 @@ func NewApp(clm *cluster.Manager, version string) *App {
 
 func (a *App) StatusLine() *model.StatusLine {
 	return a.statusLine
-}
-
-func (a *App) ClusterManager() *cluster.Manager {
-	return a.clusterManager
-}
-
-func (a *App) Cluster() *cluster.Cluster {
-	return a.cluster
 }
 
 func (a *App) Actions() model.KeyMap {
@@ -120,7 +109,7 @@ func (a *App) Init() error {
 	go a.statusLineUi.Watch(ctx, a.statusLine.Channel())
 
 	// Handle the current cluster
-	activeCluster := a.clusterManager.Cluster()
+	activeCluster := cluster.Current()
 	if activeCluster != nil {
 		a.ClusterChanged(activeCluster)
 		a.OpenClusterDefaultView()
@@ -155,7 +144,6 @@ func (a *App) ClusterChanged(cluster *cluster.Cluster) {
 
 	if a.cluster != nil {
 		a.cluster.AddListener(a)
-
 	}
 
 	a.bindKeys()
@@ -227,14 +215,14 @@ func (*App) initSignals() {
 }
 
 func (a *App) changeCluster(name string) {
-	if a.clusterManager.Cluster().Name() == name {
+	if cluster.ActiveClusterName() == name {
 		return
 	}
 
 	a.statusLine.Info("Changing cluster to " + name)
 
 	go func() {
-		_, err := a.clusterManager.ConnectToCluster(name)
+		_, err := cluster.Connect(name)
 		if err != nil {
 			a.statusLine.Error(err.Error())
 		} else {

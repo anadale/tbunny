@@ -84,9 +84,16 @@ func run(*cobra.Command, []string) error {
 	slog.SetDefault(slog.New(logHandler))
 
 	config.Init(configDir)
-	clm := createClusterManager()
+	cluster.Init(config.RootDirectory())
 
-	app := application.NewApp(clm, version)
+	activeClusterName := cluster.ActiveClusterName()
+	if activeClusterName != "" {
+		if _, err := cluster.Connect(activeClusterName); err != nil {
+			slog.Error("Failed to connect to active RabbitMQ cluster", sl.Cluster, activeClusterName, sl.Error, err)
+		}
+	}
+
+	app := application.NewApp(version)
 
 	if err := app.Init(); err != nil {
 		return err
@@ -99,17 +106,4 @@ func run(*cobra.Command, []string) error {
 	}
 
 	return nil
-}
-
-func createClusterManager() *cluster.Manager {
-	clm := cluster.NewManager(config.RootDirectory())
-
-	activeClusterName := clm.GetActiveClusterName()
-	if activeClusterName != "" {
-		if _, err := clm.ConnectToCluster(activeClusterName); err != nil {
-			slog.Error("Failed to connect to active RabbitMQ cluster", sl.Cluster, activeClusterName, sl.Error, err)
-		}
-	}
-
-	return clm
 }

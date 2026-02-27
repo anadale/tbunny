@@ -3,6 +3,7 @@ package queues
 import (
 	"slices"
 	"strings"
+	"tbunny/internal/cluster"
 	"tbunny/internal/model"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
@@ -15,9 +16,10 @@ type CreateQueueFn func(queueType, vhost, name string, durable bool, args map[st
 
 func ShowCreateQueueDialog(app model.App, okFn CreateQueueFn) {
 	f := ui.NewModalForm()
+	c := cluster.Current()
 
-	virtualHostNames := utils.Map(app.Cluster().VirtualHosts(), func(vh rabbithole.VhostInfo) string { return vh.Name })
-	activeVhostNameIndex := max(0, slices.Index(virtualHostNames, app.Cluster().ActiveVirtualHost()))
+	virtualHostNames := utils.Map(c.VirtualHosts(), func(vh rabbithole.VhostInfo) string { return vh.Name })
+	activeVhostNameIndex := max(0, slices.Index(virtualHostNames, c.ActiveVirtualHost()))
 
 	f.AddInputField("Name:", "", 30, nil, nil)
 	f.AddDropDown("Type:", []string{"Default for virtual host", "Classic", "Quorum", "Stream"}, 0, nil)

@@ -13,11 +13,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ManagerListener interface {
+type Listener interface {
 	ClusterChanged(*Cluster)
 }
 
-type Manager struct {
+var (
 	cluster *Cluster
 
 	config      *clustersConfig
@@ -25,24 +25,106 @@ type Manager struct {
 	configFile  string
 	clustersDir string
 
-	listeners []ManagerListener
+	listeners []Listener
 	mx        sync.RWMutex
+)
+
+func Init(configDir string) {
+	clustersDir = path.Join(configDir, "clusters")
+	configFile = path.Join(configDir, "clusters.yaml")
+
+	clusters, config = loadClusters(configFile, clustersDir)
 }
 
-func NewManager(configDir string) *Manager {
-	clustersDir := path.Join(configDir, "clusters")
-	configFile := path.Join(configDir, "clusters.yaml")
+func Clusters() map[string]*Config {
+	mx.RLock()
+	defer mx.RUnlock()
 
-	clusters, config := loadClusters(configFile, clustersDir)
+	return maps.Clone(clusters)
+}
 
-	m := Manager{
-		config:      config,
-		clusters:    clusters,
-		configFile:  configFile,
-		clustersDir: clustersDir,
+func ActiveClusterName() string {
+	return config.ActiveCluster
+}
+
+func Connect(name string) (*Cluster, error) {
+	var cfg *Config
+	var ok bool
+
+	if cfg, ok = clusters[name]; !ok {
+		return nil, fmt.Errorf("active cluster %s not found", name)
 	}
 
-	return &m
+	newCluster, err := NewCluster(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to cluster %s: %w", name, err)
+	}
+
+	setCluster(newCluster)
+
+	return newCluster, nil
+}
+
+func Create(name string, parameters ConnectionParameters) error {
+	mx.RLock()
+	if _, ok := clusters[name]; ok {
+		mx.RUnlock()
+		return fmt.Errorf("cluster %s already exists", name)
+	}
+
+	mx.Lock()
+	defer mx.Unlock()
+
+	clusterConfig := &Config{
+		Connection: parameters,
+		name:       name,
+		fileName:   path.Join(clustersDir, name+".yaml"),
+	}
+
+	err := clusterConfig.save()
+	if err != nil {
+		return err
+	}
+
+	clusters[name] = clusterConfig
+
+	return nil
+}
+
+func Delete(name string) error {
+	mx.Lock()
+	defer mx.Unlock()
+
+	c, ok := clusters[name]
+	if !ok {
+		return fmt.Errorf("cluster %s not found", name)
+	}
+
+	delete(clusters, name)
+
+	_ = os.Remove(c.fileName)
+
+	return nil
+}
+
+func Current() *Cluster {
+	mx.RLock()
+	defer mx.RUnlock()
+
+	return cluster
+}
+
+func AddListener(l Listener) {
+	listeners = append(listeners, l)
+}
+
+func RemoveListener(l Listener) {
+	for i, l2 := range listeners {
+		if l2 == l {
+			listeners = append(listeners[:i], listeners[i+1:]...)
+			return
+		}
+	}
 }
 
 func loadClusters(configFile, clustersDir string) (clusters map[string]*Config, config *clustersConfig) {
@@ -114,115 +196,29 @@ func loadClusters(configFile, clustersDir string) (clusters map[string]*Config, 
 	return clusters, config
 }
 
-func (m *Manager) GetClusters() map[string]*Config {
-	m.mx.RLock()
-	defer m.mx.RUnlock()
-
-	return maps.Clone(m.clusters)
-}
-
-func (m *Manager) GetActiveClusterName() string {
-	return m.config.ActiveCluster
-}
-
-func (m *Manager) ConnectToCluster(name string) (*Cluster, error) {
-	var cfg *Config
-	var ok bool
-
-	if cfg, ok = m.clusters[name]; !ok {
-		return nil, fmt.Errorf("active cluster %s not found", name)
-	}
-
-	newCluster, err := NewCluster(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to cluster %s: %w", name, err)
-	}
-
-	m.setCluster(newCluster)
-
-	return newCluster, nil
-}
-
-func (m *Manager) Create(name string, parameters ConnectionParameters) error {
-	if _, ok := m.clusters[name]; ok {
-		return fmt.Errorf("cluster %s already exists", name)
-	}
-
-	config := &Config{
-		Connection: parameters,
-		name:       name,
-		fileName:   path.Join(m.clustersDir, name+".yaml"),
-	}
-
-	err := config.save()
-	if err != nil {
-		return err
-	}
-
-	m.clusters[name] = config
-
-	return nil
-}
-
-func (m *Manager) Delete(name string) error {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-
-	cluster, ok := m.clusters[name]
-	if !ok {
-		return fmt.Errorf("cluster %s not found", name)
-	}
-
-	delete(m.clusters, name)
-
-	_ = os.Remove(cluster.fileName)
-
-	return nil
-}
-
-func (m *Manager) Cluster() *Cluster {
-	m.mx.RLock()
-	defer m.mx.RUnlock()
-
-	return m.cluster
-}
-
-func (m *Manager) AddListener(l ManagerListener) {
-	m.listeners = append(m.listeners, l)
-}
-
-func (m *Manager) RemoveListener(l ManagerListener) {
-	for i, l2 := range m.listeners {
-		if l2 == l {
-			m.listeners = append(m.listeners[:i], m.listeners[i+1:]...)
-			return
-		}
-	}
-}
-
-func (m *Manager) setCluster(c *Cluster) {
+func setCluster(c *Cluster) {
 	var oldCluster *Cluster
 
-	m.mx.Lock()
+	mx.Lock()
 
-	oldCluster = m.cluster
-	m.cluster = c
+	oldCluster = cluster
+	cluster = c
 
 	var shouldSave bool
 
-	if m.cluster != nil {
-		if m.config.ActiveCluster != c.Name() {
-			m.config.ActiveCluster = c.Name()
+	if cluster != nil {
+		if config.ActiveCluster != c.Name() {
+			config.ActiveCluster = c.Name()
 			shouldSave = true
 		}
 	} else {
-		if m.config.ActiveCluster != "" {
-			m.config.ActiveCluster = ""
+		if config.ActiveCluster != "" {
+			config.ActiveCluster = ""
 			shouldSave = true
 		}
 	}
 
-	m.mx.Unlock()
+	mx.Unlock()
 
 	if oldCluster != nil {
 		oldCluster.stopPolling()
@@ -233,38 +229,38 @@ func (m *Manager) setCluster(c *Cluster) {
 	}
 
 	if shouldSave {
-		m.saveConfig()
+		saveConfig()
 	}
 
-	m.notifyClusterChanged()
+	notifyClusterChanged()
 }
 
-func (m *Manager) notifyClusterChanged() {
-	for _, l := range m.listeners {
-		l.ClusterChanged(m.cluster)
+func notifyClusterChanged() {
+	for _, l := range listeners {
+		l.ClusterChanged(cluster)
 	}
 }
 
-func (m *Manager) saveConfig() {
-	m.mx.RLock()
-	defer m.mx.RUnlock()
+func saveConfig() {
+	mx.RLock()
+	defer mx.RUnlock()
 
-	content, err := yaml.Marshal(m.config)
+	content, err := yaml.Marshal(config)
 	if err != nil {
-		slog.Error("Failed to marshal cluster config", sl.Error, err, sl.File, m.configFile)
+		slog.Error("Failed to marshal cluster config", sl.Error, err, sl.File, configFile)
 		return
 	}
 
-	err = os.MkdirAll(m.clustersDir, 0755)
+	err = os.MkdirAll(clustersDir, 0755)
 	if err != nil {
-		slog.Error("Failed to create clusters directory", sl.Error, err, sl.File, m.clustersDir)
+		slog.Error("Failed to create clusters directory", sl.Error, err, sl.File, clustersDir)
 		return
 	}
 
-	err = os.WriteFile(m.configFile, content, 0600)
+	err = os.WriteFile(configFile, content, 0600)
 	if err != nil {
-		slog.Error("Failed to save cluster config", sl.Error, err, sl.File, m.configFile)
+		slog.Error("Failed to save cluster config", sl.Error, err, sl.File, configFile)
 	}
 
-	slog.Info("Saved clusters config", sl.File, m.configFile)
+	slog.Info("Saved clusters config", sl.File, configFile)
 }

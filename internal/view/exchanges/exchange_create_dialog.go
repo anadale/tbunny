@@ -3,6 +3,7 @@ package exchanges
 import (
 	"slices"
 	"strings"
+	"tbunny/internal/cluster"
 	"tbunny/internal/model"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
@@ -15,9 +16,10 @@ type CreateExchangeFn func(exchangeType, vhost, name string, durable, autoDelete
 
 func ShowCreateExchangeDialog(app model.App, okFn CreateExchangeFn) {
 	f := ui.NewModalForm()
+	c := cluster.Current()
 
-	virtualHostNames := utils.Map(app.Cluster().VirtualHosts(), func(vh rabbithole.VhostInfo) string { return vh.Name })
-	activeVhostNameIndex := max(0, slices.Index(virtualHostNames, app.Cluster().ActiveVirtualHost()))
+	virtualHostNames := utils.Map(c.VirtualHosts(), func(vh rabbithole.VhostInfo) string { return vh.Name })
+	activeVhostNameIndex := max(0, slices.Index(virtualHostNames, c.ActiveVirtualHost()))
 
 	f.AddInputField("Name:", "", 30, nil, nil)
 	f.AddDropDown("Type:", []string{"Direct", "Fanout", "Headers", "Topic", "x-local-random"}, 0, nil)

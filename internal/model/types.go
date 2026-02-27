@@ -1,8 +1,6 @@
 package model
 
 import (
-	"tbunny/internal/cluster"
-
 	"github.com/rivo/tview"
 )
 
@@ -49,10 +47,6 @@ type View interface {
 
 type App interface {
 	StatusLine() *StatusLine
-
-	Cluster() *cluster.Cluster
-
-	ClusterManager() *cluster.Manager
 
 	// Actions returns global application key actions.
 	Actions() KeyMap

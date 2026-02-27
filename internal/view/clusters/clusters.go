@@ -29,8 +29,8 @@ func NewClusters() model.View {
 }
 
 func (c *Clusters) GetResources() ([]*ClusterResource, error) {
-	configClusters := c.App().ClusterManager().GetClusters()
-	currentCluster := c.App().ClusterManager().GetActiveClusterName()
+	configClusters := cluster.Clusters()
+	currentCluster := cluster.ActiveClusterName()
 
 	rows := make([]*ClusterResource, 0, len(configClusters))
 
@@ -55,12 +55,12 @@ func (c *Clusters) CanDeleteResources() bool {
 	return true
 }
 
-func (c *Clusters) DeleteResource(cluster *ClusterResource) error {
-	if cluster.active {
-		return fmt.Errorf("unable to delete active cluster %s", cluster.name)
+func (c *Clusters) DeleteResource(r *ClusterResource) error {
+	if r.active {
+		return fmt.Errorf("unable to delete active cluster %s", r.name)
 	}
 
-	err := c.App().ClusterManager().Delete(cluster.name)
+	err := cluster.Delete(r.name)
 	if err != nil {
 		return err
 	}
@@ -90,9 +90,7 @@ func (c *Clusters) addClusterCmd(*tcell.EventKey) *tcell.EventKey {
 func (c *Clusters) addCluster(name string, parameters cluster.ConnectionParameters) {
 	c.App().StatusLine().Info(fmt.Sprintf("Adding cluster %s...", name))
 
-	clm := c.App().ClusterManager()
-
-	err := clm.Create(name, parameters)
+	err := cluster.Create(name, parameters)
 	if err != nil {
 		c.App().StatusLine().Error(fmt.Sprintf("Failed to add cluster: %s", err))
 		return
@@ -103,12 +101,10 @@ func (c *Clusters) addCluster(name string, parameters cluster.ConnectionParamete
 }
 
 func (c *Clusters) switchToCluster(name string) {
-	clm := c.App().ClusterManager()
-
 	c.App().DisableKeys()
 
 	go func() {
-		_, err := clm.ConnectToCluster(name)
+		_, err := cluster.Connect(name)
 		c.App().EnableKeys()
 
 		if err != nil {

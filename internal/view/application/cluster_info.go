@@ -27,10 +27,10 @@ func NewClusterInfo(app *App) *ClusterInfo {
 	c.layout()
 	c.reset()
 
-	c.ClusterChanged(c.app.ClusterManager().Cluster())
+	c.ClusterChanged(cluster.Current())
 	c.SkinChanged(skins.Current())
 
-	app.ClusterManager().AddListener(&c)
+	cluster.AddListener(&c)
 	skins.AddListener(&c)
 
 	return &c
