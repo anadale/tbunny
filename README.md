@@ -19,6 +19,7 @@ This project started as a personal adventure to learn Go, and it's been heavily 
 
 - ⚡ **Lightning Fast** – Navigate RabbitMQ resources with keyboard shortcuts
 - 🎯 **Multi-Cluster Support** – Easily switch between different RabbitMQ clusters
+- ☸️ **Kubernetes Support** – Connect to RabbitMQ running inside Kubernetes clusters via automatic port-forwarding
 - 📊 **Comprehensive Views** – Queues, exchanges, virtual hosts, users, and more
 - 🎨 **Customizable** – Tweak the UI to match your preferences
 
@@ -98,12 +99,41 @@ tbunny
 When you run TBunny for the first time (or when no cluster is configured), you'll see the clusters list view. To add your first cluster:
 
 1. Press `a` to open the "Add Cluster" dialog
-2. Enter your RabbitMQ Management API URL (e.g., `http://localhost:15672`)
-3. Provide your username and password
-4. Give your cluster a name
-5. Press `Enter` to save
+2. Give your cluster a name
+3. Choose the **connection type** – `Direct` or `Kubernetes` (see below)
+4. Fill in the connection details
+5. Provide your username and password
+6. Press `Enter` to save
 
 That's it! TBunny will connect to your cluster and you can start managing your RabbitMQ resources.
+
+#### Direct Connection
+
+Use this type to connect to a RabbitMQ instance accessible via its Management API URL directly:
+
+| Field | Example |
+|-------|---------|
+| URL | `http://localhost:15672` |
+| Username | `guest` |
+| Password | `guest` |
+
+#### Connecting to Kubernetes-Hosted RabbitMQ
+
+If your RabbitMQ runs inside a Kubernetes cluster, TBunny can connect to it automatically using port-forwarding — no need to run `kubectl port-forward` manually!
+
+**Prerequisites:** `~/.kube/config` must be configured with at least one context. If TBunny finds a valid kubeconfig, the `Kubernetes` option will appear in the connection type dropdown automatically.
+
+When you select **Kubernetes** as the connection type, fill in:
+
+| Field | Description | Default |
+|-------|-------------|---------|
+| Context | Kubernetes context from your kubeconfig | *(first available)* |
+| Namespace | Namespace where RabbitMQ is deployed | `rabbitmq` |
+| Instance name | Name of the RabbitMQ instance | `rabbitmq` |
+| Username | RabbitMQ management user | `guest` |
+| Password | RabbitMQ management password | `guest` |
+
+TBunny will automatically find a RabbitMQ pod in the specified namespace (using standard `app.kubernetes.io/name` and `app.kubernetes.io/instance` labels), establish a port-forward to the Management API, and keep it alive for the duration of the session.
 
 ### Command Line Options
 
