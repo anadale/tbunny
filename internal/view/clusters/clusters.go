@@ -8,6 +8,7 @@ import (
 	"tbunny/internal/model"
 	"tbunny/internal/ui"
 	"tbunny/internal/view"
+	"tbunny/internal/view/clusters/dialogs"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -45,8 +46,8 @@ func (c *Clusters) GetResources() ([]*ClusterResource, error) {
 
 func (c *Clusters) GetColumns() []ui.TableColumn {
 	return []ui.TableColumn{
-		{Name: "name", Title: "NAME", Expansion: 2},
-		{Name: "uri", Title: "URI", Expansion: 1},
+		{Name: "name", Title: "NAME", Expansion: 1},
+		{Name: "connection", Title: "CONNECTION", Expansion: 3},
 		{Name: "username", Title: "USER"},
 	}
 }
@@ -82,7 +83,7 @@ func (c *Clusters) selectCluster(row *ClusterResource) {
 }
 
 func (c *Clusters) addClusterCmd(*tcell.EventKey) *tcell.EventKey {
-	ShowAddClusterDialog(c.App(), c.addCluster)
+	dialogs.ShowAddClusterDialog(c.App(), c.addCluster)
 
 	return nil
 }

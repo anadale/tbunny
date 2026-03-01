@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log/slog"
@@ -42,6 +43,7 @@ type Cluster struct {
 	listeners    []any
 	errorCount   atomic.Int32
 	pollChan     chan struct{}
+	connection   connection
 	mx           sync.RWMutex
 }
 
@@ -54,16 +56,20 @@ type Information struct {
 	ManagementVersion string
 }
 
-func NewCluster(cfg *Config) (*Cluster, error) {
+func NewCluster(ctx context.Context, cfg *Config) (c *Cluster, err error) {
 	var client *rmq.Client
-	var err error
 
-	conn := cfg.Connection
-	if strings.HasPrefix(strings.ToLower(conn.Uri), "https://") {
+	conn, err := cfg.Connection.createConnection(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	uri := conn.Uri()
+	if strings.HasPrefix(strings.ToLower(uri), "https://") {
 		transport := &http.Transport{TLSClientConfig: &tls.Config{}}
-		client, err = rmq.NewTLSClient(conn.Uri, conn.Username, conn.Password, transport)
+		client, err = rmq.NewTLSClient(uri, cfg.Connection.Username, cfg.Connection.Password, transport)
 	} else {
-		client, err = rmq.NewClient(conn.Uri, conn.Username, conn.Password)
+		client, err = rmq.NewClient(uri, cfg.Connection.Username, cfg.Connection.Password)
 	}
 
 	if err != nil {
@@ -89,14 +95,15 @@ func NewCluster(cfg *Config) (*Cluster, error) {
 		}
 	}
 
-	c := Cluster{
+	c = &Cluster{
 		Client:       client,
+		connection:   conn,
 		config:       cfg,
 		info:         info,
 		virtualHosts: vhosts,
 	}
 
-	return &c, nil
+	return c, nil
 }
 
 func (c *Cluster) IsAvailable() bool {
@@ -195,6 +202,15 @@ func (c *Cluster) Refresh() {
 			// Refresh already requested
 		}
 	}
+}
+
+func (c *Cluster) start() {
+	c.startPolling()
+}
+
+func (c *Cluster) stop() {
+	c.connection.Close()
+	c.stopPolling()
 }
 
 func (c *Cluster) startPolling() {

@@ -39,8 +39,8 @@ func (c *ClusterResource) GetTableColumnValue(columnName string) string {
 		}
 		return c.name
 
-	case "uri":
-		return c.Connection.Uri
+	case "connection":
+		return c.Connection.String()
 
 	case "username":
 		return c.Connection.Username

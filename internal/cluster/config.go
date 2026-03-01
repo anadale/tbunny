@@ -17,13 +17,7 @@ type Config struct {
 	fileName string
 }
 
-type ConnectionParameters struct {
-	Uri      string `yaml:"uri" json:"uri"`
-	Username string `yaml:"username" json:"username"`
-	Password string `yaml:"password" json:"password"`
-}
-
-type clustersConfig struct {
+type clustersConfiguration struct {
 	ActiveCluster string `yaml:"activeCluster" json:"activeCluster"`
 }
 
@@ -44,4 +38,8 @@ func (c *Config) save() error {
 	}
 
 	return nil
+}
+
+func (c *Config) migrate() {
+	c.Connection = c.Connection.migrate()
 }

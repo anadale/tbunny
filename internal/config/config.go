@@ -12,7 +12,8 @@ import (
 )
 
 type Config struct {
-	UI UI `yaml:"ui" json:"ui"`
+	UI                UI            `yaml:"ui" json:"ui"`
+	ConnectionTimeout time.Duration `yaml:"connectionTimeout" json:"connectionTimeout"`
 }
 
 type UI struct {
@@ -57,11 +58,7 @@ func Init(configRoot string) {
 
 	config, err = loadConfigFromFile(configFile)
 	if err != nil {
-		if os.IsNotExist(err) {
-			config = newConfig()
-		} else {
-			panic(fmt.Sprintf("unable to load configuration from file %s: %v", configFile, err))
-		}
+		panic(fmt.Sprintf("unable to load configuration from file %s: %v", configFile, err))
 	}
 }
 
@@ -88,8 +85,14 @@ func RemoveListener(l Listener) {
 }
 
 func loadConfigFromFile(filePath string) (config *Config, err error) {
+	config = newConfig()
+
 	content, err := os.ReadFile(filePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return config, nil
+		}
+
 		return nil, err
 	}
 
@@ -104,6 +107,7 @@ func newConfig() *Config {
 			EnableMouse:    true,
 			SplashDuration: 1 * time.Second,
 		},
+		ConnectionTimeout: 10 * time.Second,
 	}
 }
 

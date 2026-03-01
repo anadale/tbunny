@@ -13,7 +13,7 @@ type ModalDialog struct {
 	primitive tview.Primitive
 }
 
-type Skinnable interface {
+type skinnable interface {
 	ApplySkin(skin *skins.Skin)
 }
 
@@ -22,10 +22,6 @@ func NewModalDialog(primitive tview.Primitive, width, height int) *ModalDialog {
 		Flex:      tview.NewFlex(),
 		centerRow: tview.NewFlex().SetDirection(tview.FlexRow),
 		primitive: primitive,
-	}
-
-	if skinnable, ok := primitive.(Skinnable); ok {
-		skinnable.ApplySkin(skins.Current())
 	}
 
 	d.centerRow.
@@ -37,10 +33,18 @@ func NewModalDialog(primitive tview.Primitive, width, height int) *ModalDialog {
 		AddItem(d.centerRow, width, 1, true).
 		AddItem(nil, 0, 1, false)
 
+	d.ApplySkin()
+
 	return &d
 }
 
 func (d *ModalDialog) Resize(width, height int) {
 	d.centerRow.ResizeItem(d.primitive, height, 1)
 	d.ResizeItem(d.centerRow, width, 1)
+}
+
+func (d *ModalDialog) ApplySkin() {
+	if s, ok := d.primitive.(skinnable); ok {
+		s.ApplySkin(skins.Current())
+	}
 }

@@ -1,83 +1,13 @@
-package clusters
+package dialogs
 
 import (
 	"net/url"
 	"strings"
-	"tbunny/internal/cluster"
-	"tbunny/internal/model"
-	"tbunny/internal/ui"
 	"unicode"
 	"unicode/utf8"
-
-	"github.com/rivo/tview"
 )
 
-type AddClusterFn func(name string, parameters cluster.ConnectionParameters)
-
-func ShowAddClusterDialog(app model.App, okFn AddClusterFn) {
-	f := ui.NewModalForm()
-
-	f.AddInputField("Name:", "", 30, nil, nil)
-	f.AddInputField("URI:", "", 30, nil, nil)
-	f.AddInputField("Username:", "", 30, nil, nil)
-	f.AddInputField("Password:", "", 30, nil, nil)
-
-	f.AddButtons([]string{"Cancel", "Create"})
-
-	nameField := f.GetFormItem(0).(*tview.InputField)
-	uriField := f.GetFormItem(1).(*tview.InputField)
-	usernameField := f.GetFormItem(2).(*tview.InputField)
-	passwordField := f.GetFormItem(3).(*tview.InputField)
-
-	nameField.SetPlaceholder("localhost")
-	uriField.SetPlaceholder("http://localhost:15672")
-	usernameField.SetPlaceholder("guest")
-	passwordField.SetPlaceholder("guest")
-
-	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-		if buttonIndex != 1 {
-			app.DismissModal()
-			return
-		}
-
-		name := strings.TrimSpace(nameField.GetText())
-		if !checkClusterName(name) {
-			f.SetFocus(0)
-			return
-		}
-
-		uri := strings.TrimSpace(uriField.GetText())
-		if !checkUri(uri) {
-			f.SetFocus(1)
-			return
-		}
-
-		username := strings.TrimSpace(usernameField.GetText())
-		if username == "" {
-			f.SetFocus(2)
-		}
-
-		password := passwordField.GetText()
-		if password == "" {
-			password = "guest"
-		}
-
-		params := cluster.ConnectionParameters{
-			Uri:      uri,
-			Username: username,
-			Password: password,
-		}
-
-		okFn(name, params)
-	})
-
-	f.SetTitle("Add cluster")
-
-	modal := ui.NewModalDialog(f, 60, 10)
-	app.ShowModal(modal)
-}
-
-func checkUri(text string) bool {
+func validateUri(text string) bool {
 	uri, err := url.ParseRequestURI(text)
 	if err != nil {
 		return false
@@ -99,7 +29,7 @@ func checkUri(text string) bool {
 // - Windows-safe: no <>:"/\|?*, NUL, control symbols
 // - doesn't end with a space or dot (important for Windows)
 // - not a reserved Windows word (CON, NUL, COM1...) — basename is checked until the first dot.
-func checkClusterName(s string) bool {
+func validateClusterName(s string) bool {
 	if s == "" {
 		return false
 	}

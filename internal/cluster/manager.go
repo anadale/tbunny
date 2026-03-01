@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -8,6 +9,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"tbunny/internal/config"
 	"tbunny/internal/sl"
 
 	"gopkg.in/yaml.v3"
@@ -20,10 +22,10 @@ type Listener interface {
 var (
 	cluster *Cluster
 
-	config      *clustersConfig
-	clusters    map[string]*Config
-	configFile  string
-	clustersDir string
+	clustersConfig *clustersConfiguration
+	clusters       map[string]*Config
+	configFile     string
+	clustersDir    string
 
 	listeners []Listener
 	mx        sync.RWMutex
@@ -33,7 +35,7 @@ func Init(configDir string) {
 	clustersDir = path.Join(configDir, "clusters")
 	configFile = path.Join(configDir, "clusters.yaml")
 
-	clusters, config = loadClusters(configFile, clustersDir)
+	clusters, clustersConfig = loadClusters(configFile, clustersDir)
 }
 
 func Clusters() map[string]*Config {
@@ -44,7 +46,7 @@ func Clusters() map[string]*Config {
 }
 
 func ActiveClusterName() string {
-	return config.ActiveCluster
+	return clustersConfig.ActiveCluster
 }
 
 func Connect(name string) (*Cluster, error) {
@@ -55,7 +57,10 @@ func Connect(name string) (*Cluster, error) {
 		return nil, fmt.Errorf("active cluster %s not found", name)
 	}
 
-	newCluster, err := NewCluster(cfg)
+	ctx, cancel := context.WithTimeout(context.Background(), config.Current().ConnectionTimeout)
+	defer cancel()
+
+	newCluster, err := NewCluster(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to cluster %s: %w", name, err)
 	}
@@ -72,6 +77,7 @@ func Create(name string, parameters ConnectionParameters) error {
 		return fmt.Errorf("cluster %s already exists", name)
 	}
 
+	mx.RUnlock()
 	mx.Lock()
 	defer mx.Unlock()
 
@@ -127,7 +133,7 @@ func RemoveListener(l Listener) {
 	}
 }
 
-func loadClusters(configFile, clustersDir string) (clusters map[string]*Config, config *clustersConfig) {
+func loadClusters(configFile, clustersDir string) (clusters map[string]*Config, config *clustersConfiguration) {
 	var content []byte
 
 	clusters = make(map[string]*Config)
@@ -151,18 +157,20 @@ func loadClusters(configFile, clustersDir string) (clusters map[string]*Config, 
 					continue
 				}
 
-				var cluster *Config
+				var clusterConfig *Config
 
-				err = yaml.Unmarshal(content, &cluster)
+				err = yaml.Unmarshal(content, &clusterConfig)
 				if err != nil {
 					slog.Error("Failed to parse cluster config", sl.Error, err, sl.File, name)
 					continue
 				}
 
-				cluster.name = name
-				cluster.fileName = clusterFile
+				clusterConfig.migrate()
 
-				clusters[name] = cluster
+				clusterConfig.name = name
+				clusterConfig.fileName = clusterFile
+
+				clusters[name] = clusterConfig
 			}
 		}
 	}
@@ -178,7 +186,7 @@ func loadClusters(configFile, clustersDir string) (clusters map[string]*Config, 
 	}
 
 	if config == nil {
-		config = &clustersConfig{}
+		config = &clustersConfiguration{}
 	}
 
 	_, ok := clusters[config.ActiveCluster]
@@ -207,13 +215,13 @@ func setCluster(c *Cluster) {
 	var shouldSave bool
 
 	if cluster != nil {
-		if config.ActiveCluster != c.Name() {
-			config.ActiveCluster = c.Name()
+		if clustersConfig.ActiveCluster != c.Name() {
+			clustersConfig.ActiveCluster = c.Name()
 			shouldSave = true
 		}
 	} else {
-		if config.ActiveCluster != "" {
-			config.ActiveCluster = ""
+		if clustersConfig.ActiveCluster != "" {
+			clustersConfig.ActiveCluster = ""
 			shouldSave = true
 		}
 	}
@@ -221,15 +229,15 @@ func setCluster(c *Cluster) {
 	mx.Unlock()
 
 	if oldCluster != nil {
-		oldCluster.stopPolling()
+		oldCluster.stop()
 	}
 
 	if c != nil {
-		c.startPolling()
+		c.start()
 	}
 
 	if shouldSave {
-		saveConfig()
+		saveClustersConfig()
 	}
 
 	notifyClusterChanged()
@@ -241,11 +249,11 @@ func notifyClusterChanged() {
 	}
 }
 
-func saveConfig() {
+func saveClustersConfig() {
 	mx.RLock()
 	defer mx.RUnlock()
 
-	content, err := yaml.Marshal(config)
+	content, err := yaml.Marshal(clustersConfig)
 	if err != nil {
 		slog.Error("Failed to marshal cluster config", sl.Error, err, sl.File, configFile)
 		return

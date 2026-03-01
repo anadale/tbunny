@@ -214,23 +214,6 @@ func (*App) initSignals() {
 	}(sig)
 }
 
-func (a *App) changeCluster(name string) {
-	if cluster.ActiveClusterName() == name {
-		return
-	}
-
-	a.statusLine.Info("Changing cluster to " + name)
-
-	go func() {
-		_, err := cluster.Connect(name)
-		if err != nil {
-			a.statusLine.Error(err.Error())
-		} else {
-			a.statusLine.Info("Cluster changed")
-		}
-	}()
-}
-
 func (a *App) bindKeys() {
 	m := ui.KeyMap{
 		tcell.KeyEscape: ui.NewKeyActionWithGroup("Back/Clear", a.closeViewCmd, false, 0),
