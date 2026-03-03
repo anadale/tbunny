@@ -59,6 +59,14 @@ type Information struct {
 	ManagementVersion string
 }
 
+const (
+	// pollingInterval specifies how often the cluster information is polled.
+	pollingInterval = 5 * time.Second
+
+	// connectionLostErrorsThreshold specifies the number of consecutive errors after which the cluster connection is considered lost.
+	connectionLostErrorsThreshold = 3
+)
+
 func NewCluster(ctx context.Context, cfg *Config) (c *Cluster, err error) {
 	var client *rmq.Client
 
@@ -302,7 +310,7 @@ func (c *Cluster) stopPolling() {
 func (c *Cluster) poll(ch chan struct{}) {
 	slog.Debug("Cluster availability monitoring started", sl.Cluster, c.config.name)
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(pollingInterval)
 	defer ticker.Stop()
 
 	for {
@@ -331,7 +339,7 @@ func (c *Cluster) probeConnection() {
 	}
 
 	if err != nil {
-		if c.errorCount.Add(1) == 2 {
+		if c.errorCount.Add(1) == connectionLostErrorsThreshold {
 			slog.Debug("Cluster connection lost", sl.Cluster, c.config.name)
 			c.notifyConnectionLost()
 		}
