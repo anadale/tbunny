@@ -117,6 +117,9 @@ func (s *LiveUpdateStrategy) updateLoop(ch <-chan UpdateKind) {
 
 	slog.Debug("Update loop started", sl.Component, s.name)
 
+	ticker := time.NewTicker(s.updateInterval)
+	defer ticker.Stop()
+
 	for {
 		kind := PartialUpdate
 
@@ -130,7 +133,7 @@ func (s *LiveUpdateStrategy) updateLoop(ch <-chan UpdateKind) {
 			slog.Debug("Update requested received", sl.Component, s.name, "kind", k.String())
 
 			kind = k
-		case <-time.After(s.updateInterval):
+		case <-ticker.C:
 		}
 
 		round++

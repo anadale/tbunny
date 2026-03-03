@@ -236,6 +236,9 @@ func (c *Cluster) stopPolling() {
 func (c *Cluster) poll(ch chan struct{}) {
 	slog.Debug("Cluster availability monitoring started", sl.Cluster, c.config.name)
 
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case _, ok := <-ch:
@@ -244,7 +247,7 @@ func (c *Cluster) poll(ch chan struct{}) {
 				return
 			}
 			slog.Debug("Cluster information refresh triggered", sl.Cluster, c.config.name)
-		case <-time.After(5 * time.Second):
+		case <-ticker.C:
 		}
 
 		c.probeConnection()
