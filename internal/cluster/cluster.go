@@ -295,8 +295,6 @@ func (c *Cluster) probeConnection() {
 		if c.sanitizeFavoriteVhosts() {
 			c.saveConfig()
 		}
-
-		c.notifyVirtualHostsChanged()
 	}
 
 	c.mx.Unlock()
