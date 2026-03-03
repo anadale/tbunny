@@ -121,10 +121,16 @@ func Current() *Cluster {
 }
 
 func AddListener(l Listener) {
+	mx.Lock()
+	defer mx.Unlock()
+
 	listeners = append(listeners, l)
 }
 
 func RemoveListener(l Listener) {
+	mx.Lock()
+	defer mx.Unlock()
+
 	for i, l2 := range listeners {
 		if l2 == l {
 			listeners = append(listeners[:i], listeners[i+1:]...)
