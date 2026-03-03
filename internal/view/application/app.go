@@ -46,12 +46,14 @@ type App struct {
 
 	// Toggles
 	headerVisible bool
+	filterVisible bool
 	crumbsVisible bool
 	disableKeys   bool
 
 	// Views
 	main         *tview.Pages
 	header       *Header
+	filter       *Filter
 	content      *ViewStack
 	crumbs       *ui.Crumbs
 	statusLineUi *ui.StatusLine
@@ -70,6 +72,7 @@ func NewApp(version string) *App {
 	a.content = NewViewStack(&a)
 	a.main = tview.NewPages()
 	a.header = NewHeader(&a)
+	a.filter = NewFilter(&a)
 	a.crumbs = ui.NewCrumbs()
 	a.statusLineUi = ui.NewStatusLine(&a)
 
@@ -101,7 +104,8 @@ func (a *App) Init() error {
 	// Add listeners for crumbs and menu
 	a.content.AddListener(a.crumbs)
 
-	a.SetRoot(a.main, true).EnableMouse(a.config.UI.EnableMouse)
+	a.SetRoot(a.main, true)
+	//a.EnableMouse(a.config.UI.EnableMouse)
 	a.SetInputCapture(a.keyboard)
 	a.bindKeys()
 
@@ -160,7 +164,7 @@ func (a *App) ClusterConnectionRestored(*cluster.Cluster) {
 func (a *App) ConfigChanged(cfg *config.Config) {
 	a.config = cfg
 
-	a.EnableMouse(cfg.UI.EnableMouse)
+	//a.EnableMouse(cfg.UI.EnableMouse)
 }
 
 func (a *App) SkinChanged(skin *skins.Skin) {
@@ -195,13 +199,23 @@ func (a *App) layout() {
 		f.AddItem(a.header, 7, 1, false)
 	}
 
-	f.AddItem(a.content.Primitive(), 0, 10, true)
+	if a.filterVisible {
+		f.AddItem(a.filter, 3, 1, true)
+	}
+
+	f.AddItem(a.content.Primitive(), 0, 10, !a.filterVisible)
 
 	if a.crumbsVisible {
 		f.AddItem(a.crumbs, 1, 1, false)
 	}
 
 	f.AddItem(a.statusLineUi, 1, 1, false)
+
+	if a.filterVisible {
+		a.SetFocus(a.filter)
+	} else {
+		a.SetFocus(a.content.Primitive())
+	}
 }
 
 func (*App) initSignals() {
@@ -216,11 +230,13 @@ func (*App) initSignals() {
 
 func (a *App) bindKeys() {
 	m := ui.KeyMap{
-		tcell.KeyEscape: ui.NewKeyActionWithGroup("Back/Clear", a.closeViewCmd, false, 0),
-		ui.KeyHelp:      ui.NewKeyActionWithGroup("Help", a.helpCmd, false, 1),
-		tcell.KeyCtrlC:  ui.NewKeyActionWithGroup("Quit", a.quitCmd, false, 2),
-		tcell.KeyCtrlE:  ui.NewKeyActionWithGroup("Toggle header", a.toggleHeaderCmd, false, 3),
-		tcell.KeyCtrlG:  ui.NewKeyActionWithGroup("Toggle crumbs", a.toggleCrumbsCmd, false, 3),
+		tcell.KeyEscape: ui.NewKeyActionWithGroup("Back/Clear", a.clearOrBackCmd, false, 0),
+		ui.KeySlash:     ui.NewKeyActionWithGroup("Filter", a.filterCmd, false, 0),
+
+		ui.KeyHelp:     ui.NewKeyActionWithGroup("Help", a.helpCmd, false, 1),
+		tcell.KeyCtrlC: ui.NewKeyActionWithGroup("Quit", a.quitCmd, false, 2),
+		tcell.KeyCtrlE: ui.NewKeyActionWithGroup("Toggle header", a.toggleHeaderCmd, false, 3),
+		tcell.KeyCtrlG: ui.NewKeyActionWithGroup("Toggle crumbs", a.toggleCrumbsCmd, false, 3),
 	}
 
 	if a.cluster != nil {
@@ -272,7 +288,21 @@ func (a *App) helpCmd(*tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
-func (a *App) closeViewCmd(*tcell.EventKey) *tcell.EventKey {
+func (a *App) filterCmd(*tcell.EventKey) *tcell.EventKey {
+	top := a.content.Top()
+	if filterer, ok := top.(model.Filterer); ok {
+		a.OpenFilter(filterer)
+	}
+
+	return nil
+}
+
+func (a *App) clearOrBackCmd(*tcell.EventKey) *tcell.EventKey {
+	filterer, ok := a.content.Top().(model.Filterer)
+	if ok && filterer.Clear() {
+		return nil
+	}
+
 	a.CloseLastView()
 
 	return nil
@@ -342,6 +372,10 @@ func (a *App) keyboard(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
+	if a.filterVisible {
+		return event
+	}
+
 	ui.RecordLastKey(event)
 	if k, ok := a.actions[ui.AsKey(event)]; ok && !a.content.IsTopDialog() {
 		return k.Action(event)
@@ -404,4 +438,16 @@ func (a *App) ShowModal(modal tview.Primitive) {
 
 func (a *App) DismissModal() {
 	a.content.DismissModal()
+}
+
+func (a *App) OpenFilter(filterer model.Filterer) {
+	a.filter.Open(filterer)
+
+	a.filterVisible = true
+	a.layout()
+}
+
+func (a *App) closeFilter() {
+	a.filterVisible = false
+	a.layout()
 }

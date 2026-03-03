@@ -45,6 +45,13 @@ type View interface {
 	RemoveActionsListener(listener ViewActionsListener)
 }
 
+type Filterer interface {
+	// Filter applies a filter to the view.
+	Filter(filter string)
+	// Clear clears the filter and returns true if the filter was cleared.
+	Clear() bool
+}
+
 type App interface {
 	StatusLine() *StatusLine
 
@@ -60,4 +67,5 @@ type App interface {
 	OpenClusterDefaultView()
 	ShowModal(modal tview.Primitive)
 	DismissModal()
+	OpenFilter(filterer Filterer)
 }

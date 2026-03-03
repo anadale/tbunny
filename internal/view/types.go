@@ -24,6 +24,7 @@ type ResourceProvider[R Resource] interface {
 
 type ResourceView[R Resource] interface {
 	model.View
+	model.Filterer
 
 	App() model.App
 

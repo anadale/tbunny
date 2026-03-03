@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"tbunny/internal/skins"
 	"tbunny/internal/ui"
 	"tbunny/internal/ui/dialog"
@@ -11,9 +12,10 @@ import (
 )
 
 const (
-	titleNameFragmentFmt  = "[fg:bg:b]%s"
-	titlePathFragmentFmt  = "([hilite:bg:b]%s[fg:bg:-])"
-	titleCountFragmentFmt = "[fg:bg:-][[count:bg:b]%d[fg:bg:-]][fg:bg:-]"
+	titleNameFragmentFmt   = "[fg:bg:b]%s"
+	titlePathFragmentFmt   = "([hilite:bg:b]%s[fg:bg:-])"
+	titleCountFragmentFmt  = "[fg:bg:-][[count:bg:b]%d[fg:bg:-]][fg:bg:-]"
+	titleFilterFragmentFmt = " [fg:bg:-]<[filter:bg:b]/%s[fg:bg:-]>[fg:bg:-]"
 )
 
 type ResourceTableView[R Resource] struct {
@@ -23,6 +25,9 @@ type ResourceTableView[R Resource] struct {
 	path             string
 	enterActionTitle string
 	enterActionFn    func(R)
+	filter           string
+	resources        []R
+	mx               sync.RWMutex
 }
 
 func NewResourceTableView[R Resource](name string, strategy UpdateStrategy) *ResourceTableView[R] {
@@ -74,6 +79,25 @@ func (b *ResourceTableView[R]) SkinChanged(skin *skins.Skin) {
 	b.updateTitle()
 }
 
+func (b *ResourceTableView[R]) Filter(filter string) {
+	b.mx.Lock()
+	b.filter = filter
+	b.mx.Unlock()
+
+	b.App().QueueUpdateDraw(b.filterAndSet)
+}
+
+func (b *ResourceTableView[R]) Clear() bool {
+	if b.filter == "" {
+		return false
+	}
+
+	b.filter = ""
+	b.App().QueueUpdateDraw(b.filterAndSet)
+
+	return true
+}
+
 func (b *ResourceTableView[R]) performUpdate(kind UpdateKind) {
 	rp := b.resourceProviderWithCheck()
 
@@ -81,6 +105,12 @@ func (b *ResourceTableView[R]) performUpdate(kind UpdateKind) {
 	if err != nil {
 		b.app.StatusLine().Error(err.Error())
 	}
+
+	b.mx.Lock()
+	if err == nil {
+		b.resources = rows
+	}
+	b.mx.Unlock()
 
 	b.App().QueueUpdateDraw(func() {
 		table := b.Ui()
@@ -92,11 +122,41 @@ func (b *ResourceTableView[R]) performUpdate(kind UpdateKind) {
 			b.RefreshActions()
 		}
 
-		if err == nil {
-			table.SetRows(rows)
-			b.updateTitle()
-		}
+		b.filterAndSet()
 	})
+}
+
+func (b *ResourceTableView[R]) filterAndSet() {
+	b.mx.RLock()
+	defer b.mx.RUnlock()
+
+	var rows []R
+
+	if b.filter != "" {
+		rows = make([]R, 0, len(b.resources))
+		columns := b.resourceProvider.GetColumns()
+		lowerFilter := strings.ToLower(b.filter)
+
+	r:
+		for _, row := range b.resources {
+			for _, column := range columns {
+				value := row.GetTableColumnValue(column.Name)
+				if value == "" {
+					continue
+				}
+
+				if strings.Contains(strings.ToLower(value), lowerFilter) {
+					rows = append(rows, row)
+					continue r
+				}
+			}
+		}
+	} else {
+		rows = b.resources
+	}
+
+	b.Ui().SetRows(rows)
+	b.updateTitle()
 }
 
 func (b *ResourceTableView[R]) bindKeys(km ui.KeyMap) {
@@ -153,6 +213,12 @@ func (b *ResourceTableView[R]) deleteCmd(*tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
+func (b *ResourceTableView[R]) openFilterCmd(*tcell.EventKey) *tcell.EventKey {
+	b.App().OpenFilter(b)
+
+	return nil
+}
+
 func (b *ResourceTableView[R]) updateTitle() {
 	count := b.Ui().GetRowCount()
 	if count > 0 {
@@ -169,6 +235,11 @@ func (b *ResourceTableView[R]) updateTitle() {
 	}
 
 	sb.WriteString(fmt.Sprintf(titleCountFragmentFmt, count))
+
+	if b.filter != "" {
+		sb.WriteString(fmt.Sprintf(titleFilterFragmentFmt, b.filter))
+	}
+
 	sb.WriteString(" ")
 
 	b.Ui().SetTitle(SkinTitle(sb.String()))

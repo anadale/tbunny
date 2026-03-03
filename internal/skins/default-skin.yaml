@@ -20,7 +20,7 @@ skin:
       fgColor: aqua
       highlightColor: fuchsia
       counterColor: papayawhip
-      filterColor: steelblue
+      filterColor: seagreen
   info:
     sectionColor: orange
     fgColor: white
