@@ -9,5 +9,5 @@ const (
 	Key         = "key"
 	Resource    = "resource"
 	File        = "file"
-	User        = "users"
+	User        = "user"
 )
