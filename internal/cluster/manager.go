@@ -71,15 +71,12 @@ func Connect(name string) (*Cluster, error) {
 }
 
 func Create(name string, parameters ConnectionParameters) error {
-	mx.RLock()
-	if _, ok := clusters[name]; ok {
-		mx.RUnlock()
-		return fmt.Errorf("cluster %s already exists", name)
-	}
-
-	mx.RUnlock()
 	mx.Lock()
 	defer mx.Unlock()
+
+	if _, ok := clusters[name]; ok {
+		return fmt.Errorf("cluster %s already exists", name)
+	}
 
 	clusterConfig := &Config{
 		Connection: parameters,
