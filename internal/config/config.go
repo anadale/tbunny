@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -96,7 +96,7 @@ func loadConfigFromFile(filePath string) (config *Config, err error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(content, &config)
+	err = yaml.Unmarshal(content, &config)
 
 	return config, err
 }
