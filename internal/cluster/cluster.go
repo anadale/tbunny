@@ -445,33 +445,21 @@ func (c *Cluster) saveConfig() {
 	slog.Info("Saved cluster config", sl.Cluster, c.config.name)
 }
 
+// sanitizeFavoriteVhosts removes favorite vhosts that are not in the cluster.
 func (c *Cluster) sanitizeFavoriteVhosts() bool {
-	var victims []string
-
-	for _, favorite := range c.config.FavoriteVhosts {
-		if !slices.ContainsFunc(c.virtualHosts, func(vhost rabbithole.VhostInfo) bool { return vhost.Name == favorite }) {
-			victims = append(victims, favorite)
-		}
-	}
-
-	if len(victims) == 0 {
-		return false
-	}
-
-	favorites := make([]string, 0, len(c.config.FavoriteVhosts)-len(victims))
-	for _, favorite := range c.config.FavoriteVhosts {
-		if !slices.Contains(victims, favorite) {
-			favorites = append(favorites, favorite)
-		}
-	}
-
-	c.config.FavoriteVhosts = favorites
+	before := len(c.config.FavoriteVhosts)
+	c.config.FavoriteVhosts = slices.DeleteFunc(c.config.FavoriteVhosts, func(v string) bool {
+		return !slices.ContainsFunc(c.virtualHosts, func(vhost rabbithole.VhostInfo) bool {
+			return vhost.Name == v
+		})
+	})
 
 	slog.Info("Sanitized favorite vhosts", sl.Cluster, c.config.name)
 
-	return true
+	return before != len(c.config.FavoriteVhosts)
 }
 
+// isEqualVhosts checks if two lists of vhosts are equal.
 func isEqualVhosts(vhosts1 []rabbithole.VhostInfo, vhosts2 []rabbithole.VhostInfo) bool {
 	if len(vhosts1) != len(vhosts2) {
 		return false
