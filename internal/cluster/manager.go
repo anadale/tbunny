@@ -46,14 +46,18 @@ func Clusters() map[string]*Config {
 }
 
 func ActiveClusterName() string {
+	mx.RLock()
+	defer mx.RUnlock()
+
 	return clustersConfig.ActiveCluster
 }
 
 func Connect(name string) (*Cluster, error) {
-	var cfg *Config
-	var ok bool
+	mx.RLock()
+	cfg, ok := clusters[name]
+	mx.RUnlock()
 
-	if cfg, ok = clusters[name]; !ok {
+	if !ok {
 		return nil, fmt.Errorf("active cluster %s not found", name)
 	}
 
@@ -247,7 +251,12 @@ func setCluster(c *Cluster) {
 }
 
 func notifyClusterChanged() {
-	for _, l := range clustersListeners {
+	mx.RLock()
+	listeners := make([]Listener, len(clustersListeners))
+	copy(listeners, clustersListeners)
+	mx.RUnlock()
+
+	for _, l := range listeners {
 		l.ClusterChanged(cluster)
 	}
 }
