@@ -27,8 +27,8 @@ var (
 	configFile     string
 	clustersDir    string
 
-	listeners []Listener
-	mx        sync.RWMutex
+	clustersListeners []Listener
+	mx                sync.RWMutex
 )
 
 func Init(configDir string) {
@@ -124,16 +124,16 @@ func AddListener(l Listener) {
 	mx.Lock()
 	defer mx.Unlock()
 
-	listeners = append(listeners, l)
+	clustersListeners = append(clustersListeners, l)
 }
 
 func RemoveListener(l Listener) {
 	mx.Lock()
 	defer mx.Unlock()
 
-	for i, l2 := range listeners {
+	for i, l2 := range clustersListeners {
 		if l2 == l {
-			listeners = append(listeners[:i], listeners[i+1:]...)
+			clustersListeners = append(clustersListeners[:i], clustersListeners[i+1:]...)
 			return
 		}
 	}
@@ -250,7 +250,7 @@ func setCluster(c *Cluster) {
 }
 
 func notifyClusterChanged() {
-	for _, l := range listeners {
+	for _, l := range clustersListeners {
 		l.ClusterChanged(cluster)
 	}
 }

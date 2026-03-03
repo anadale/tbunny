@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"tbunny/internal/cluster"
-	"tbunny/internal/model"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
 	"tbunny/internal/view"
@@ -31,14 +30,17 @@ func NewVHosts() view.ResourceView[*VHostResource] {
 	return &v
 }
 
-func (v *VHosts) Init(app model.App) error {
-	if err := v.ClusterAwareResourceView.Init(app); err != nil {
-		return err
-	}
+func (v *VHosts) Start() {
+	v.ClusterAwareResourceView.Start()
 
-	v.Cluster().AddListener(v)
+	v.Cluster().AddActiveVirtualHostListener(v)
+	v.Cluster().AddVirtualHostsListener(v)
+}
+func (v *VHosts) Stop() {
+	v.Cluster().RemoveActiveVirtualHostListener(v)
+	v.Cluster().RemoveVirtualHostsListener(v)
 
-	return nil
+	v.ClusterAwareResourceView.Stop()
 }
 
 func (v *VHosts) GetResources() ([]*VHostResource, error) {

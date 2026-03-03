@@ -24,7 +24,8 @@ func NewVHostExtender[R view.Resource](r view.ClusterAwareResourceView[R]) view.
 }
 
 func (e *Extender[R]) Start() {
-	e.Cluster().AddListener(e)
+	e.Cluster().AddActiveVirtualHostListener(e)
+	e.Cluster().AddVirtualHostsListener(e)
 
 	e.SetPath(view.VhostDisplayName(e.Cluster().ActiveVirtualHost()))
 	e.ClusterAwareResourceView.Start()
@@ -33,7 +34,8 @@ func (e *Extender[R]) Start() {
 func (e *Extender[R]) Stop() {
 	e.ClusterAwareResourceView.Stop()
 
-	e.Cluster().RemoveListener(e)
+	e.Cluster().RemoveActiveVirtualHostListener(e)
+	e.Cluster().RemoveVirtualHostsListener(e)
 }
 
 func (e *Extender[R]) ClusterActiveVirtualHostChanged(cluster *cluster.Cluster) {

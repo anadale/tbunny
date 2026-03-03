@@ -37,14 +37,17 @@ type ConnectionListener interface {
 type Cluster struct {
 	*rmq.Client
 
-	config       *Config
-	info         Information
-	virtualHosts []rabbithole.VhostInfo
-	listeners    []any
-	errorCount   atomic.Int32
-	pollChan     chan struct{}
-	connection   connection
-	mx           sync.RWMutex
+	config                     *Config
+	info                       Information
+	virtualHosts               []rabbithole.VhostInfo
+	virtualHostsListeners      []VirtualHostsListener
+	activeVirtualHostListeners []ActiveVirtualHostListener
+	informationListeners       []InformationListener
+	connectionsListeners       []ConnectionListener
+	errorCount                 atomic.Int32
+	pollChan                   chan struct{}
+	connection                 connection
+	mx                         sync.RWMutex
 }
 
 type Information struct {
@@ -110,14 +113,77 @@ func (c *Cluster) IsAvailable() bool {
 	return c.errorCount.Load() == 0
 }
 
-func (c *Cluster) AddListener(l any) {
-	c.listeners = append(c.listeners, l)
+func (c *Cluster) AddVirtualHostsListener(l VirtualHostsListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.virtualHostsListeners = append(c.virtualHostsListeners, l)
 }
 
-func (c *Cluster) RemoveListener(l any) {
-	for i, l2 := range c.listeners {
+func (c *Cluster) RemoveVirtualHostsListener(l VirtualHostsListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	for i, l2 := range c.virtualHostsListeners {
 		if l2 == l {
-			c.listeners = append(c.listeners[:i], c.listeners[i+1:]...)
+			c.virtualHostsListeners = append(c.virtualHostsListeners[:i], c.virtualHostsListeners[i+1:]...)
+			return
+		}
+	}
+}
+
+func (c *Cluster) AddActiveVirtualHostListener(l ActiveVirtualHostListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.activeVirtualHostListeners = append(c.activeVirtualHostListeners, l)
+}
+
+func (c *Cluster) RemoveActiveVirtualHostListener(l ActiveVirtualHostListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	for i, l2 := range c.activeVirtualHostListeners {
+		if l2 == l {
+			c.activeVirtualHostListeners = append(c.activeVirtualHostListeners[:i], c.activeVirtualHostListeners[i+1:]...)
+			return
+		}
+	}
+}
+
+func (c *Cluster) AddInformationListener(l InformationListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.informationListeners = append(c.informationListeners, l)
+}
+
+func (c *Cluster) RemoveInformationListener(l InformationListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	for i, l2 := range c.informationListeners {
+		if l2 == l {
+			c.informationListeners = append(c.informationListeners[:i], c.informationListeners[i+1:]...)
+			return
+		}
+	}
+}
+
+func (c *Cluster) AddConnectionListener(l ConnectionListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.connectionsListeners = append(c.connectionsListeners, l)
+}
+
+func (c *Cluster) RemoveConnectionListener(l ConnectionListener) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	for i, l2 := range c.connectionsListeners {
+		if l2 == l {
+			c.connectionsListeners = append(c.connectionsListeners[:i], c.connectionsListeners[i+1:]...)
 			return
 		}
 	}
@@ -314,7 +380,11 @@ func (c *Cluster) probeConnection() {
 }
 
 func (c *Cluster) notifyActiveVirtualHostChanged() {
-	for _, l := range c.listeners {
+	c.mx.RLock()
+	listeners := c.activeVirtualHostListeners
+	c.mx.RUnlock()
+
+	for _, l := range listeners {
 		if t, ok := l.(ActiveVirtualHostListener); ok {
 			t.ClusterActiveVirtualHostChanged(c)
 		}
@@ -322,7 +392,11 @@ func (c *Cluster) notifyActiveVirtualHostChanged() {
 }
 
 func (c *Cluster) notifyVirtualHostsChanged() {
-	for _, l := range c.listeners {
+	c.mx.RLock()
+	listeners := c.virtualHostsListeners
+	c.mx.RUnlock()
+
+	for _, l := range listeners {
 		if t, ok := l.(VirtualHostsListener); ok {
 			t.ClusterVirtualHostsChanged(c)
 		}
@@ -330,7 +404,11 @@ func (c *Cluster) notifyVirtualHostsChanged() {
 }
 
 func (c *Cluster) notifyInformationChanged() {
-	for _, l := range c.listeners {
+	c.mx.RLock()
+	listeners := c.informationListeners
+	c.mx.RUnlock()
+
+	for _, l := range listeners {
 		if t, ok := l.(InformationListener); ok {
 			t.ClusterInformationChanged(c)
 		}
@@ -338,7 +416,7 @@ func (c *Cluster) notifyInformationChanged() {
 }
 
 func (c *Cluster) notifyConnectionLost() {
-	for _, l := range c.listeners {
+	for _, l := range c.connectionsListeners {
 		if t, ok := l.(ConnectionListener); ok {
 			t.ClusterConnectionLost(c)
 		}
@@ -346,7 +424,11 @@ func (c *Cluster) notifyConnectionLost() {
 }
 
 func (c *Cluster) notifyConnectionRestored() {
-	for _, l := range c.listeners {
+	c.mx.RLock()
+	listeners := c.connectionsListeners
+	c.mx.RUnlock()
+
+	for _, l := range listeners {
 		if t, ok := l.(ConnectionListener); ok {
 			t.ClusterConnectionRestored(c)
 		}

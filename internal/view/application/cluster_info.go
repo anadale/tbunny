@@ -38,13 +38,13 @@ func NewClusterInfo(app *App) *ClusterInfo {
 
 func (c *ClusterInfo) ClusterChanged(cluster *cluster.Cluster) {
 	if c.cluster != nil {
-		c.cluster.RemoveListener(c)
+		c.cluster.RemoveInformationListener(c)
 	}
 
 	c.cluster = cluster
 
 	if c.cluster != nil {
-		c.cluster.AddListener(c)
+		c.cluster.AddInformationListener(c)
 	}
 
 	c.app.QueueUpdateDraw(func() {

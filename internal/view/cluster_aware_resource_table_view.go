@@ -44,13 +44,17 @@ func (v *ClusterAwareResourceTableView[R]) Start() {
 	v.ResourceTableView.Start()
 
 	if v.cluster != nil {
-		v.cluster.AddListener(v)
+		v.cluster.AddActiveVirtualHostListener(v)
+		v.cluster.AddVirtualHostsListener(v)
+		v.cluster.AddConnectionListener(v)
 	}
 }
 
 func (v *ClusterAwareResourceTableView[R]) Stop() {
 	if v.cluster != nil {
-		v.cluster.RemoveListener(v)
+		v.cluster.RemoveActiveVirtualHostListener(v)
+		v.cluster.RemoveVirtualHostsListener(v)
+		v.cluster.RemoveConnectionListener(v)
 	}
 
 	v.ResourceTableView.Stop()

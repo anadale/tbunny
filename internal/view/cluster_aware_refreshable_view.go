@@ -43,11 +43,15 @@ func (v *ClusterAwareRefreshableView[U]) Start() {
 	}
 
 	v.RefreshableView.Start()
-	v.cluster.AddListener(v)
+	v.cluster.AddActiveVirtualHostListener(v)
+	v.cluster.AddVirtualHostsListener(v)
+	v.cluster.AddConnectionListener(v)
 }
 
 func (v *ClusterAwareRefreshableView[U]) Stop() {
-	v.cluster.RemoveListener(v)
+	v.cluster.RemoveActiveVirtualHostListener(v)
+	v.cluster.RemoveVirtualHostsListener(v)
+	v.cluster.RemoveConnectionListener(v)
 	v.RefreshableView.Stop()
 }
 

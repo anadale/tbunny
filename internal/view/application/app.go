@@ -141,13 +141,13 @@ func (a *App) Run() error {
 
 func (a *App) ClusterChanged(cluster *cluster.Cluster) {
 	if a.cluster != nil {
-		a.cluster.RemoveListener(a)
+		a.cluster.RemoveConnectionListener(a)
 	}
 
 	a.cluster = cluster
 
 	if a.cluster != nil {
-		a.cluster.AddListener(a)
+		a.cluster.AddConnectionListener(a)
 	}
 
 	a.bindKeys()
