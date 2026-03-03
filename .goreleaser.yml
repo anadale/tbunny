@@ -135,10 +135,10 @@ release:
     owner: anadale
     name: tbunny
 
-  # Create release as draft for manual review (optional)
-  draft: false
+  # Create a release as a draft for manual review (optional)
+  draft: true
 
-  # Mark as prerelease if version contains alpha, beta, rc
+  # Mark as prerelease if a version contains alpha, beta, rc
   prerelease: auto
 
   # Release name template
@@ -150,6 +150,10 @@ release:
 
     Welcome to this new release of TBunny! 🐰
 
+    ### Main release theme
+    
+    Describe the main changes in this release.
+    
     ### Installation
 
     Download the appropriate binary for your platform below, extract it, and add it to your PATH.
