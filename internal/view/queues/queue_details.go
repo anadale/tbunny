@@ -143,7 +143,7 @@ func (q *QueueDetails) determineLayoutMode() {
 func (q *QueueDetails) performUpdate(view.UpdateKind) {
 	i, err := q.Cluster().GetQueue(q.vhost, q.name)
 	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Не удалось получить данные очереди: %v", err.Error()))
+		q.App().StatusLine().Errorf("Не удалось получить данные очереди: %v", err.Error())
 		return
 	}
 

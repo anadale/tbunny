@@ -128,6 +128,7 @@ func AddListener(l Listener) {
 	clustersListeners = append(clustersListeners, l)
 }
 
+// RemoveListener removes a listener from the list of listeners.
 func RemoveListener(l Listener) {
 	mx.Lock()
 	defer mx.Unlock()

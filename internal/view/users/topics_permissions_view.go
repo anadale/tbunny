@@ -1,7 +1,6 @@
 package users
 
 import (
-	"fmt"
 	"log/slog"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
@@ -93,7 +92,7 @@ func (v *TopicsPermissionsView) createPermissionsCmd(*tcell.EventKey) *tcell.Eve
 	}
 
 	ShowCreateTopicPermissionsDialog(v.App(), vhosts, v.fetchExchanges, func(vhost, exchange, write, read string) {
-		v.App().StatusLine().Info(fmt.Sprintf("Creating permissions for exchange %s in vhost %s", exchange, vhost))
+		v.App().StatusLine().Infof("Creating permissions for exchange %s in vhost %s", exchange, vhost)
 		v.setPermissions(vhost, exchange, write, read)
 	})
 
@@ -107,7 +106,7 @@ func (v *TopicsPermissionsView) editPermissionsCmd(*tcell.EventKey) *tcell.Event
 	}
 
 	ShowEditTopicPermissionsDialog(v.App(), r.Vhost, view.ExchangeDisplayName(r.Exchange), r.Write, r.Read, func(vhost, exchange, write, read string) {
-		v.App().StatusLine().Info(fmt.Sprintf("Updating permissions for exchange %s in vhost %s", exchange, vhost))
+		v.App().StatusLine().Infof("Updating permissions for exchange %s in vhost %s", exchange, vhost)
 		v.setPermissions(vhost, exchange, write, read)
 	})
 
@@ -128,7 +127,7 @@ func (v *TopicsPermissionsView) setPermissions(vhost, exchange, write, read stri
 	_, err := v.Cluster().UpdateTopicPermissionsIn(vhost, v.user, permissions)
 	if err != nil {
 		slog.Error("Failed to set topic permissions", sl.Error, err, sl.Component, v.Name(), sl.Cluster, v.Cluster().Name(), sl.User, v.user, sl.VirtualHost, vhost)
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to set topic permissions for exchange %s in vhost %s", view.ExchangeDisplayName(exchange), vhost))
+		v.App().StatusLine().Errorf("Failed to set topic permissions for exchange %s in vhost %s", view.ExchangeDisplayName(exchange), vhost)
 
 		return
 	}

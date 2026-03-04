@@ -1,7 +1,6 @@
 package vhosts
 
 import (
-	"fmt"
 	"tbunny/internal/cluster"
 	"tbunny/internal/ui"
 	"tbunny/internal/view"
@@ -67,7 +66,7 @@ func (e *Extender[R]) switchToVirtualHostCmd(key *tcell.EventKey) *tcell.EventKe
 		vhost = e.Cluster().FavoriteVhosts()[idx]
 	}
 
-	e.App().StatusLine().Info(fmt.Sprintf("Switching to virtual host %s", view.VhostDisplayName(vhost)))
+	e.App().StatusLine().Infof("Switching to virtual host %s", view.VhostDisplayName(vhost))
 	e.Cluster().SetActiveVirtualHost(vhost)
 
 	return nil

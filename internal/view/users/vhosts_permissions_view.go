@@ -1,7 +1,6 @@
 package users
 
 import (
-	"fmt"
 	"log/slog"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
@@ -100,7 +99,7 @@ func (v *VhostsPermissionsView) createPermissionsCmd(*tcell.EventKey) *tcell.Eve
 
 	if len(availableVhosts) > 0 {
 		ShowCreateVhostPermissionsDialog(v.App(), availableVhosts, func(vhost, configure, write, read string) {
-			v.App().StatusLine().Info(fmt.Sprintf("Creating permissions for vhost %s", vhost))
+			v.App().StatusLine().Infof("Creating permissions for vhost %s", vhost)
 			v.setPermissions(vhost, configure, write, read)
 		})
 	} else {
@@ -117,7 +116,7 @@ func (v *VhostsPermissionsView) editPermissionsCmd(*tcell.EventKey) *tcell.Event
 	}
 
 	ShowEditVhostPermissionsDialog(v.App(), r.Vhost, r.Configure, r.Write, r.Read, func(vhost, configure, write, read string) {
-		v.App().StatusLine().Info(fmt.Sprintf("Updating permissions for vhost %s", vhost))
+		v.App().StatusLine().Infof("Updating permissions for vhost %s", vhost)
 		v.setPermissions(vhost, configure, write, read)
 	})
 
@@ -134,7 +133,7 @@ func (v *VhostsPermissionsView) setPermissions(vhost, configure, write, read str
 	_, err := v.Cluster().UpdatePermissionsIn(vhost, v.user, permissions)
 	if err != nil {
 		slog.Error("Failed to set permissions", sl.Error, err, sl.Component, v.Name(), sl.Cluster, v.Cluster().Name(), sl.User, v.user, sl.VirtualHost, vhost)
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to set permissions for vhost %s", vhost))
+		v.App().StatusLine().Errorf("Failed to set permissions for vhost %s", vhost)
 
 		return
 	}

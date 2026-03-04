@@ -194,13 +194,13 @@ func (b *ResourceTableView[R]) deleteCmd(*tcell.EventKey) *tcell.EventKey {
 		"Confirm Delete",
 		msg,
 		func() {
-			b.App().StatusLine().Info(fmt.Sprintf("Deleting %s...", displayName))
+			b.App().StatusLine().Infof("Deleting %s...", displayName)
 
 			err := b.resourceProviderWithCheck().DeleteResource(row)
 			if err != nil {
-				b.App().StatusLine().Error(err.Error())
+				b.App().StatusLine().Errorf("Failed to delete %s: %s", displayName, err.Error())
 			} else {
-				b.App().StatusLine().Info(fmt.Sprintf("Deleted %s", displayName))
+				b.App().StatusLine().Infof("Deleted %s", displayName)
 				b.RequestUpdate(PartialUpdate)
 			}
 		},

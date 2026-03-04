@@ -3,6 +3,7 @@ package application
 import (
 	"fmt"
 	"log/slog"
+	"sync"
 	"tbunny/internal/model"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
@@ -12,24 +13,152 @@ import (
 
 const modalDialogKey = "dialog"
 
+const (
+	stackPush stackAction = 1 << iota
+	stackPop
+)
+
+type stackAction int
+
+type ViewStackListener interface {
+	StackPushed(model.View)
+	StackPopped(old, new model.View)
+	StackTop(model.View)
+}
+
 type ViewStack struct {
-	*model.ViewStack
+	views     []model.View
+	listeners []ViewStackListener
+	mx        sync.RWMutex
 
 	app   *App
 	pages *tview.Pages
-	top   model.View
 }
 
 func NewViewStack(app *App) *ViewStack {
 	p := ViewStack{
-		ViewStack: model.NewViewStack(),
-		app:       app,
-		pages:     tview.NewPages(),
+		app:   app,
+		pages: tview.NewPages(),
 	}
 
-	p.AddListener(&p)
-
 	return &p
+}
+
+func (vs *ViewStack) AddListener(l ViewStackListener) {
+	vs.mx.Lock()
+	vs.listeners = append(vs.listeners, l)
+	vs.mx.Unlock()
+
+	if !vs.Empty() {
+		l.StackTop(vs.Top())
+	}
+}
+
+func (vs *ViewStack) RemoveListener(l ViewStackListener) {
+	vs.mx.Lock()
+	defer vs.mx.Unlock()
+
+	for i, l2 := range vs.listeners {
+		if l2 == l {
+			vs.listeners = append(vs.listeners[:i], vs.listeners[i+1:]...)
+			return
+		}
+	}
+}
+
+func (vs *ViewStack) Empty() bool {
+	vs.mx.RLock()
+	defer vs.mx.RUnlock()
+
+	return len(vs.views) == 0
+}
+
+func (vs *ViewStack) Push(v model.View) {
+	var top model.View
+
+	vs.mx.Lock()
+	if len(vs.views) > 0 {
+		top = vs.views[len(vs.views)-1]
+	}
+
+	vs.views = append(vs.views, v)
+	vs.mx.Unlock()
+
+	if top != nil {
+		top.Stop()
+	}
+
+	vs.addAndShow(v)
+	v.Start()
+	vs.app.SetFocus(v.Primitive())
+
+	vs.notify(stackPush, v)
+}
+
+func (vs *ViewStack) Pop() (model.View, bool) {
+	if vs.Empty() {
+		return nil, false
+	}
+
+	var top model.View
+
+	vs.mx.Lock()
+	v := vs.views[len(vs.views)-1]
+	vs.views = vs.views[:len(vs.views)-1]
+
+	if len(vs.views) > 0 {
+		top = vs.views[len(vs.views)-1]
+	}
+	vs.mx.Unlock()
+
+	v.Stop()
+	vs.delete(v)
+
+	if top != nil {
+		vs.show(top)
+		top.Start()
+		vs.app.SetFocus(top.Primitive())
+	}
+
+	vs.notify(stackPop, v)
+
+	return v, true
+}
+
+func (vs *ViewStack) Clear() {
+	for range vs.views {
+		vs.Pop()
+	}
+}
+
+func (vs *ViewStack) Last() bool {
+	vs.mx.RLock()
+	defer vs.mx.RUnlock()
+
+	return len(vs.views) == 1
+}
+
+func (vs *ViewStack) Top() model.View {
+	if vs.Empty() {
+		return nil
+	}
+
+	vs.mx.RLock()
+	defer vs.mx.RUnlock()
+
+	return vs.views[len(vs.views)-1]
+}
+
+func (vs *ViewStack) CollectNames() []string {
+	vs.mx.RLock()
+	defer vs.mx.RUnlock()
+
+	names := make([]string, len(vs.views))
+	for i, c := range vs.views {
+		names[i] = c.Name()
+	}
+
+	return names
 }
 
 func (vs *ViewStack) Primitive() tview.Primitive {
@@ -62,7 +191,12 @@ func (vs *ViewStack) ShowModal(modal tview.Primitive) {
 
 func (vs *ViewStack) DismissModal() {
 	vs.pages.RemovePage(modalDialogKey)
-	vs.app.SetFocus(vs.top.Primitive())
+
+	top := vs.Top()
+
+	if top != nil {
+		vs.app.SetFocus(top.Primitive())
+	}
 }
 
 func (vs *ViewStack) addAndShow(c model.View) {
@@ -82,37 +216,20 @@ func (vs *ViewStack) delete(v model.View) {
 	vs.pages.RemovePage(viewID(v))
 }
 
-func (vs *ViewStack) StackPushed(top model.View) {
-	if vs.top != nil {
-		vs.top.Stop()
+func (vs *ViewStack) notify(action stackAction, v model.View) {
+	vs.mx.RLock()
+	listeners := make([]ViewStackListener, len(vs.listeners))
+	copy(listeners, vs.listeners)
+	vs.mx.RUnlock()
+
+	for _, l := range listeners {
+		switch action {
+		case stackPush:
+			l.StackPushed(v)
+		case stackPop:
+			l.StackPopped(v, vs.Top())
+		}
 	}
-
-	vs.top = top
-
-	vs.addAndShow(top)
-	top.Start()
-	vs.app.SetFocus(top.Primitive())
-}
-
-func (vs *ViewStack) StackPopped(_, top model.View) {
-	if vs.top != nil {
-		vs.top.Stop()
-		vs.delete(vs.top)
-	}
-
-	vs.StackTop(top)
-}
-
-func (vs *ViewStack) StackTop(top model.View) {
-	if top == nil {
-		return
-	}
-
-	vs.top = top
-
-	vs.show(top)
-	top.Start()
-	vs.app.SetFocus(top.Primitive())
 }
 
 func viewID(v model.View) string {

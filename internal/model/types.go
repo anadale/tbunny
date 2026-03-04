@@ -80,7 +80,7 @@ type App interface {
 	ModalManager
 
 	// StatusLine returns the status line.
-	StatusLine() *StatusLine
+	StatusLine() StatusLine
 
 	// Actions returns global application key actions.
 	Actions() KeyMap

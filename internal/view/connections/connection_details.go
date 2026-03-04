@@ -59,7 +59,7 @@ func (v *ConnectionDetails) Init(app model.App) error {
 func (v *ConnectionDetails) performUpdate(view.UpdateKind) {
 	connection, err := v.Cluster().GetConnection(v.name)
 	if err != nil {
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to fetch connection details: %v", err))
+		v.App().StatusLine().Errorf("Failed to fetch connection details: %v", err)
 		return
 	}
 

@@ -143,11 +143,11 @@ func (q *Queues) getMessagesCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (q *Queues) getMessages(queue *QueueResource, ackMode rmq.AckMode, encoding rmq.RequestedMessageEncoding, count int) {
-	q.App().StatusLine().Info(fmt.Sprintf("Getting messages from %s...", queue.GetDisplayName()))
+	q.App().StatusLine().Infof("Getting messages from %s...", queue.GetDisplayName())
 
 	messages, err := q.Cluster().GetQueueMessages(queue.Vhost, queue.Name, ackMode, encoding, count)
 	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to get messages: %s", err))
+		q.App().StatusLine().Errorf("Failed to get messages: %s", err)
 		return
 	}
 
@@ -169,7 +169,7 @@ func (q *Queues) createQueueCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (q *Queues) createQueue(queueType, vhost, name string, durable bool, args map[string]any) {
-	q.App().StatusLine().Info(fmt.Sprintf("Creating queue %s", name))
+	q.App().StatusLine().Infof("Creating queue %s", name)
 
 	settings := rabbithole.QueueSettings{Durable: durable}
 	if queueType != "" {
@@ -186,7 +186,7 @@ func (q *Queues) createQueue(queueType, vhost, name string, durable bool, args m
 
 	_, err := q.Cluster().DeclareQueue(vhost, name, settings)
 	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to create queue %s: %s", name, err.Error()))
+		q.App().StatusLine().Errorf("Failed to create queue %s: %s", name, err.Error())
 		return
 	}
 
@@ -208,11 +208,11 @@ func (q *Queues) purgeQueueCmd(*tcell.EventKey) *tcell.EventKey {
 		"Confirm Purge",
 		msg,
 		func() {
-			q.App().StatusLine().Info(fmt.Sprintf("Purging %s...", queue.GetDisplayName()))
+			q.App().StatusLine().Infof("Purging %s...", queue.GetDisplayName())
 
 			_, err := q.Cluster().PurgeQueue(queue.Vhost, queue.Name)
 			if err != nil {
-				q.App().StatusLine().Error(err.Error())
+				q.App().StatusLine().Errorf("Failed to purge queue: %s", err)
 			} else {
 				q.RequestUpdate(view.PartialUpdate)
 			}
@@ -242,15 +242,15 @@ func (q *Queues) publishMessage(vhost, queue string, props map[string]any, paylo
 		PayloadEncoding: string(payloadEncoding),
 	}
 
-	q.App().StatusLine().Info(fmt.Sprintf("Publishing message to %s", queue))
+	q.App().StatusLine().Infof("Publishing message to %s", queue)
 
 	_, err := q.Cluster().PublishToExchange(vhost, "amq.default", opts)
 	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to publish message: %s", err.Error()))
+		q.App().StatusLine().Errorf("Failed to publish message: %s", err)
 		return
 	}
 
-	q.App().StatusLine().Info(fmt.Sprintf("Message published successfully to %s", queue))
+	q.App().StatusLine().Infof("Message published successfully to %s", queue)
 
 	q.App().DismissModal()
 	q.RequestUpdate(view.PartialUpdate)
@@ -264,7 +264,7 @@ func (q *Queues) moveMessagesCmd(*tcell.EventKey) *tcell.EventKey {
 
 	node, err := q.Cluster().GetNode(queue.Node)
 	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to get node info: %s", err))
+		q.App().StatusLine().Errorf("Failed to get node info: %s", err)
 		return nil
 	}
 
@@ -275,7 +275,7 @@ func (q *Queues) moveMessagesCmd(*tcell.EventKey) *tcell.EventKey {
 
 	destinationQueues, err := q.Cluster().ListQueuesIn(queue.Vhost)
 	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to list queues: %s", err))
+		q.App().StatusLine().Errorf("Failed to list queues: %s", err)
 		return nil
 	}
 
@@ -303,7 +303,7 @@ func (q *Queues) moveMessages(vhost, sourceQueue, destinationQueue string) {
 
 	_, err := q.Cluster().DeclareShovel(vhost, fmt.Sprintf("move-from-%s", sourceQueue), sd)
 	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to create shovel: %s", err.Error()))
+		q.App().StatusLine().Errorf("Failed to create shovel: %s", err.Error())
 		return
 	}
 

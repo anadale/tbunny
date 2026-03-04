@@ -1,8 +1,6 @@
 package application
 
 import (
-	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -33,14 +31,10 @@ const (
 type App struct {
 	*tview.Application
 
-	statusLine *model.StatusLine
-
 	cluster *cluster.Cluster
 	config  *config.Config
 
 	Version string
-
-	cancelFn context.CancelFunc
 
 	actions ui.KeyMap
 
@@ -51,12 +45,15 @@ type App struct {
 	disableKeys   bool
 
 	// Views
-	main         *tview.Pages
-	header       *Header
-	filter       *Filter
-	content      *ViewStack
-	crumbs       *ui.Crumbs
-	statusLineUi *ui.StatusLine
+	header     *Header
+	filter     *Filter
+	content    *ViewStack
+	crumbs     *crumbs
+	statusLine *statusLine
+
+	// UI elements
+	main     *tview.Pages
+	mainFlex *tview.Flex
 }
 
 type topLevelViewDescriptor struct {
@@ -75,36 +72,39 @@ var topLevelViews = map[string]topLevelViewDescriptor{
 }
 
 func NewApp(version string) *App {
-	a := App{
+	a := &App{
 		Application:   tview.NewApplication(),
-		statusLine:    model.NewStatusLine(model.DefaultStatusLineDelay),
 		config:        config.Current(),
 		Version:       version,
 		headerVisible: true,
 		crumbsVisible: true,
 	}
 
-	a.content = NewViewStack(&a)
+	a.content = NewViewStack(a)
 	a.main = tview.NewPages()
-	a.header = NewHeader(&a)
-	a.filter = NewFilter(&a)
-	a.crumbs = ui.NewCrumbs()
-	a.statusLineUi = ui.NewStatusLine(&a)
+	a.header = NewHeader(a)
+	a.filter = NewFilter(a)
+	a.crumbs = newCrumbs(a)
+	a.statusLine = newStatusLine(a, defaultStatusLineDelay)
 
-	cluster.AddListener(&a)
-	config.AddListener(&a)
-	skins.AddListener(&a)
+	cluster.AddListener(a)
+	config.AddListener(a)
+	skins.AddListener(a)
 
-	flex := tview.NewFlex().SetDirection(tview.FlexRow)
-	a.main.AddPage(mainPageName, flex, true, false)
+	a.mainFlex = tview.NewFlex().SetDirection(tview.FlexRow)
+	a.main.AddPage(mainPageName, a.mainFlex, true, false)
 	a.main.AddPage(splashPageName, ui.NewSplash(skins.Current(), a.Version), true, true)
+
+	a.SetRoot(a.main, true)
+	a.SetInputCapture(a.keyboard)
+	//a.EnableMouse(a.config.UI.EnableMouse)
 
 	a.SkinChanged(skins.Current())
 
-	return &a
+	return a
 }
 
-func (a *App) StatusLine() *model.StatusLine {
+func (a *App) StatusLine() model.StatusLine {
 	return a.statusLine
 }
 
@@ -113,26 +113,13 @@ func (a *App) Actions() model.KeyMap {
 }
 
 func (a *App) Init() error {
-	ctx := context.Background()
-	ctx, a.cancelFn = context.WithCancel(ctx)
-
-	// Add listeners for crumbs and menu
-	a.content.AddListener(a.crumbs)
-
-	a.SetRoot(a.main, true)
-	//a.EnableMouse(a.config.UI.EnableMouse)
-	a.SetInputCapture(a.keyboard)
-	a.bindKeys()
-
-	// Initialize screen components
-	go a.statusLineUi.Watch(ctx, a.statusLine.Channel())
-
-	// Handle the current cluster
 	activeCluster := cluster.Current()
+
 	if activeCluster != nil {
 		a.ClusterChanged(activeCluster)
 		a.OpenClusterDefaultView()
 	} else {
+		a.bindKeys()
 		a.openToplevelView("clusters")
 	}
 
@@ -185,17 +172,7 @@ func (a *App) SkinChanged(skin *skins.Skin) {
 	bgColor := skin.BgColor()
 
 	a.main.SetBackgroundColor(bgColor)
-	a.contentFlex().SetBackgroundColor(bgColor)
-}
-
-func (a *App) contentFlex() *tview.Flex {
-	if f, ok := a.main.GetPage(mainPageName).(*tview.Flex); ok {
-		return f
-	}
-
-	slog.Error("Main panel not found")
-
-	return nil
+	a.mainFlex.SetBackgroundColor(bgColor)
 }
 
 func (a *App) QueueUpdateDraw(f func()) {
@@ -205,7 +182,7 @@ func (a *App) QueueUpdateDraw(f func()) {
 }
 
 func (a *App) layout() {
-	f := a.contentFlex()
+	f := a.mainFlex
 
 	f.Clear()
 
@@ -223,7 +200,7 @@ func (a *App) layout() {
 		f.AddItem(a.crumbs, 1, 1, false)
 	}
 
-	f.AddItem(a.statusLineUi, 1, 1, false)
+	f.AddItem(a.statusLine, 1, 1, false)
 
 	if a.filterVisible {
 		a.SetFocus(a.filter)
@@ -369,7 +346,7 @@ func (a *App) openToplevelView(name string) {
 
 func (a *App) openView(v model.View, clearStack bool) {
 	if err := v.Init(a); err != nil {
-		a.StatusLine().Error(fmt.Sprintf("Failed to load %s: %s", v.Name(), err))
+		a.StatusLine().Errorf("Failed to load %s: %s", v.Name(), err)
 		slog.Error("View init failed",
 			sl.Error, err,
 			sl.Component, v.Name())

@@ -1,7 +1,6 @@
 package vhosts
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"tbunny/internal/cluster"
@@ -87,7 +86,7 @@ func (v *VHosts) CanDeleteResources() bool {
 }
 
 func (v *VHosts) DeleteResource(resource *VHostResource) error {
-	v.App().StatusLine().Info(fmt.Sprintf("Deleting virtual host %s", view.VhostDisplayName(resource.Name)))
+	v.App().StatusLine().Infof("Deleting virtual host %s", view.VhostDisplayName(resource.Name))
 
 	_, err := v.Cluster().DeleteVhost(resource.Name)
 	if err != nil {
@@ -114,7 +113,7 @@ func (v *VHosts) bindKeys(km ui.KeyMap) {
 func (v *VHosts) selectVHost(row *VHostResource) {
 	vhost := row.Name
 
-	v.App().StatusLine().Info(fmt.Sprintf("Switching to virtual host %s", view.VhostDisplayName(vhost)))
+	v.App().StatusLine().Infof("Switching to virtual host %s", view.VhostDisplayName(vhost))
 	v.Cluster().SetActiveVirtualHost(vhost)
 	v.App().OpenClusterDefaultView()
 }
@@ -125,7 +124,7 @@ func (v *VHosts) createVHostCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (v *VHosts) createVHost(name, description, tags, queueType string, tracing bool) {
-	v.App().StatusLine().Info(fmt.Sprintf("Creating virtual host %s", view.VhostDisplayName(name)))
+	v.App().StatusLine().Infof("Creating virtual host %s", view.VhostDisplayName(name))
 
 	var vhostTags rabbithole.VhostTags
 
@@ -142,7 +141,7 @@ func (v *VHosts) createVHost(name, description, tags, queueType string, tracing 
 			Tracing:          tracing,
 		})
 	if err != nil {
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to create virtual host %s: %s", view.VhostDisplayName(name), err.Error()))
+		v.App().StatusLine().Errorf("Failed to create virtual host %s: %s", view.VhostDisplayName(name), err.Error())
 		return
 	}
 

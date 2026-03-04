@@ -78,7 +78,7 @@ func (c *Clusters) bindKeys(km ui.KeyMap) {
 func (c *Clusters) selectCluster(row *ClusterResource) {
 	name := row.GetName()
 
-	c.App().StatusLine().Info(fmt.Sprintf("Switching to cluster %s", name))
+	c.App().StatusLine().Infof("Switching to cluster %s", name)
 	c.switchToCluster(name)
 }
 
@@ -89,11 +89,11 @@ func (c *Clusters) addClusterCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (c *Clusters) addCluster(name string, parameters cluster.ConnectionParameters) {
-	c.App().StatusLine().Info(fmt.Sprintf("Adding cluster %s...", name))
+	c.App().StatusLine().Infof("Adding cluster %s...", name)
 
 	err := cluster.Create(name, parameters)
 	if err != nil {
-		c.App().StatusLine().Error(fmt.Sprintf("Failed to add cluster: %s", err))
+		c.App().StatusLine().Errorf("Failed to add cluster: %s", err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (c *Clusters) switchToCluster(name string) {
 		c.App().EnableKeys()
 
 		if err != nil {
-			c.App().StatusLine().Error(err.Error())
+			c.App().StatusLine().Errorf("Failed to connect to cluster %s: %s", name, err.Error())
 			return
 		}
 

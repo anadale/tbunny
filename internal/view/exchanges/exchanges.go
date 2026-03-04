@@ -104,7 +104,7 @@ func (e *Exchanges) createExchangeCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (e *Exchanges) createExchange(exchangeType, vhost, name string, durable, autoDelete bool, args map[string]any) {
-	e.App().StatusLine().Info(fmt.Sprintf("Creating exchange %s", name))
+	e.App().StatusLine().Infof("Creating exchange %s", name)
 
 	settings := rabbithole.ExchangeSettings{
 		Type:       exchangeType,
@@ -114,7 +114,7 @@ func (e *Exchanges) createExchange(exchangeType, vhost, name string, durable, au
 
 	_, err := e.Cluster().DeclareExchange(vhost, name, settings)
 	if err != nil {
-		e.App().StatusLine().Error(fmt.Sprintf("Failed to create exchange %s: %s", name, err.Error()))
+		e.App().StatusLine().Errorf("Failed to create exchange %s: %s", name, err.Error())
 		return
 	}
 

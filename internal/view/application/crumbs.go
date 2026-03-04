@@ -1,4 +1,4 @@
-package ui
+package application
 
 import (
 	"fmt"
@@ -9,48 +9,50 @@ import (
 	"github.com/rivo/tview"
 )
 
-type Crumbs struct {
+type crumbs struct {
 	*tview.TextView
 
 	skin      *skins.Skin
 	viewNames []string
 }
 
-func NewCrumbs() *Crumbs {
-	c := Crumbs{
+func newCrumbs(app *App) *crumbs {
+	c := &crumbs{
 		TextView: tview.NewTextView(),
 	}
 
-	skins.AddListener(&c)
+	skins.AddListener(c)
 	c.SkinChanged(skins.Current())
 
 	c.SetTextAlign(tview.AlignLeft)
 	c.SetBorderPadding(0, 0, 1, 1)
 	c.SetDynamicColors(true)
 
-	return &c
+	app.content.AddListener(c)
+
+	return c
 }
 
-func (c *Crumbs) SkinChanged(skin *skins.Skin) {
+func (c *crumbs) SkinChanged(skin *skins.Skin) {
 	c.skin = skin
 
 	c.SetBackgroundColor(skin.BgColor())
 	c.refresh()
 }
 
-func (c *Crumbs) StackPushed(v model.View) {
+func (c *crumbs) StackPushed(v model.View) {
 	c.viewNames = append(c.viewNames, strings.ToLower(v.Name()))
 	c.refresh()
 }
 
-func (c *Crumbs) StackPopped(_, _ model.View) {
+func (c *crumbs) StackPopped(_, _ model.View) {
 	c.viewNames = c.viewNames[:len(c.viewNames)-1]
 	c.refresh()
 }
 
-func (c *Crumbs) StackTop(model.View) {}
+func (c *crumbs) StackTop(model.View) {}
 
-func (c *Crumbs) refresh() {
+func (c *crumbs) refresh() {
 	last, fgColor, bgColor, bbgColor := len(c.viewNames)-1, c.skin.Frame.Crumb.FgColor.Color(), c.skin.Frame.Crumb.BgColor.Color(), c.skin.Body.BgColor.Color()
 
 	c.Clear()

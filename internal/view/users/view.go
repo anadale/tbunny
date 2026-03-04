@@ -1,7 +1,6 @@
 package users
 
 import (
-	"fmt"
 	"log/slog"
 	"strings"
 	"tbunny/internal/model"
@@ -67,7 +66,7 @@ func (v *View) CanDeleteResources() bool {
 func (v *View) DeleteResource(resource *Resource) error {
 	if resource.Name == v.Cluster().Username() {
 		slog.Debug("Cannot delete current users", sl.Component, v.Name(), sl.Cluster, v.Cluster().Name(), sl.User, resource.Name)
-		v.App().StatusLine().Error(fmt.Sprintf("Cannot delete current users %s", resource.Name))
+		v.App().StatusLine().Errorf("Cannot delete current users %s", resource.Name)
 		return nil
 	}
 
@@ -94,7 +93,7 @@ func (v *View) createUserCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (v *View) createUser(name, password, tags string) {
-	v.App().StatusLine().Info(fmt.Sprintf("Creating users %s", name))
+	v.App().StatusLine().Infof("Creating users %s", name)
 
 	settings := rabbithole.UserSettings{
 		Name:     name,
@@ -105,11 +104,11 @@ func (v *View) createUser(name, password, tags string) {
 	_, err := v.Cluster().PutUser(name, settings)
 	if err != nil {
 		slog.Error("Failed to create users", sl.Error, err, sl.Component, v.Name(), sl.Cluster, v.Cluster().Name(), sl.User, name)
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to create users %s", name))
+		v.App().StatusLine().Errorf("Failed to create users %s", name)
 		return
 	}
 
-	v.App().StatusLine().Info(fmt.Sprintf("User %s created", name))
+	v.App().StatusLine().Infof("User %s created", name)
 	v.App().DismissModal()
 	v.RequestUpdate(view.PartialUpdate)
 }
@@ -130,7 +129,7 @@ func (v *View) editUser(changePassword bool, password, tags string) {
 	}
 
 	name := user.Name
-	v.App().StatusLine().Info(fmt.Sprintf("Updating users %s", name))
+	v.App().StatusLine().Infof("Updating users %s", name)
 
 	settings := rabbithole.UserSettings{
 		Name: name,
@@ -147,11 +146,11 @@ func (v *View) editUser(changePassword bool, password, tags string) {
 	_, err := v.Cluster().PutUser(name, settings)
 	if err != nil {
 		slog.Error("Failed to update users", sl.Error, err, sl.Component, v.Name(), sl.Cluster, v.Cluster().Name(), sl.User, name)
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to update users %s", name))
+		v.App().StatusLine().Errorf("Failed to update users %s", name)
 		return
 	}
 
-	v.App().StatusLine().Info(fmt.Sprintf("User %s updated", name))
+	v.App().StatusLine().Infof("User %s updated", name)
 	v.App().DismissModal()
 	v.RequestUpdate(view.PartialUpdate)
 }

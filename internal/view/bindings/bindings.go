@@ -131,7 +131,7 @@ func (b *Bindings) createBinding(otherType SubjectType, otherName, routingKey st
 
 	_, err := b.Cluster().DeclareBinding(b.vhost, info)
 	if err != nil {
-		b.App().StatusLine().Error(fmt.Sprintf("Failed to create binding: %s", err.Error()))
+		b.App().StatusLine().Errorf("Failed to create binding: %s", err.Error())
 		return
 	}
 
