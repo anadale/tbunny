@@ -8,14 +8,12 @@ import (
 type ClusterAwareResourceTableView[R Resource] struct {
 	*ResourceTableView[R]
 
-	cluster  *cluster.Cluster
-	strategy UpdateStrategy
+	cluster *cluster.Cluster
 }
 
 func NewClusterAwareResourceTableView[R Resource](name string, strategy UpdateStrategy) *ClusterAwareResourceTableView[R] {
 	v := ClusterAwareResourceTableView[R]{
 		ResourceTableView: NewResourceTableView[R](name, strategy),
-		strategy:          strategy,
 	}
 
 	return &v
@@ -38,7 +36,7 @@ func (v *ClusterAwareResourceTableView[R]) Init(app model.App) (err error) {
 
 func (v *ClusterAwareResourceTableView[R]) Start() {
 	if v.cluster == nil || !v.cluster.IsAvailable() {
-		v.strategy.Pause()
+		v.Strategy().Pause()
 	}
 
 	v.ResourceTableView.Start()
@@ -67,11 +65,11 @@ func (v *ClusterAwareResourceTableView[R]) ClusterActiveVirtualHostChanged(*clus
 func (v *ClusterAwareResourceTableView[R]) ClusterVirtualHostsChanged(*cluster.Cluster) {}
 
 func (v *ClusterAwareResourceTableView[R]) ClusterConnectionLost(*cluster.Cluster) {
-	v.strategy.Pause()
+	v.Strategy().Pause()
 	v.RefreshActions()
 }
 
 func (v *ClusterAwareResourceTableView[R]) ClusterConnectionRestored(*cluster.Cluster) {
-	v.strategy.Resume()
+	v.Strategy().Resume()
 	v.RefreshActions()
 }
