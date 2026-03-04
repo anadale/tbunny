@@ -1,7 +1,6 @@
 package bindings
 
 import (
-	"fmt"
 	"tbunny/internal/ui"
 	"tbunny/internal/view"
 
@@ -57,10 +56,7 @@ func (e *Extender[R]) showBindingsCmd(*tcell.EventKey) *tcell.EventKey {
 	details := row.GetBindingDetails()
 	bindings := NewBindings(e.subjectType, details.Subject, details.Vhost)
 
-	err := e.App().AddView(bindings)
-	if err != nil {
-		e.App().StatusLine().Error(fmt.Sprintf("Failed to load bindings: %s", err))
-	}
+	e.App().AddView(bindings)
 
 	return nil
 }

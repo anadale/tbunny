@@ -1,7 +1,6 @@
 package queues
 
 import (
-	"fmt"
 	"tbunny/internal/model"
 	"tbunny/internal/rmq"
 	"tbunny/internal/ui"
@@ -70,10 +69,7 @@ func (v *Messages) showMessageCmd(*tcell.EventKey) *tcell.EventKey {
 
 	messageView := NewMessageView(row)
 
-	err := v.App().AddView(messageView)
-	if err != nil {
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to load message details: %s", err))
-	}
+	v.App().AddView(messageView)
 
 	return nil
 }

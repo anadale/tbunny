@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"tbunny/internal/cluster"
+	"tbunny/internal/model"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
 	"tbunny/internal/view"
@@ -18,7 +19,7 @@ type VHosts struct {
 	view.ClusterAwareResourceView[*VHostResource]
 }
 
-func NewVHosts() view.ResourceView[*VHostResource] {
+func NewVHosts() model.View {
 	v := VHosts{
 		view.NewClusterAwareResourceTableView[*VHostResource]("Virtual hosts", view.NewLiveUpdateStrategy()),
 	}

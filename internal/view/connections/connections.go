@@ -3,6 +3,7 @@ package connections
 import (
 	"fmt"
 	"log/slog"
+	"tbunny/internal/model"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
@@ -20,7 +21,7 @@ type Connections struct {
 	wideMode bool
 }
 
-func NewConnections() *Connections {
+func NewConnections() model.View {
 	v := &Connections{
 		vhosts.NewVHostExtender[*ConnectionResource](
 			view.NewClusterAwareResourceTableView[*ConnectionResource]("Connections", view.NewLiveUpdateStrategy()),
@@ -128,8 +129,5 @@ func (v *Connections) toggleWideModeCmd(*tcell.EventKey) *tcell.EventKey {
 func (v *Connections) showDetails(connection *ConnectionResource) {
 	details := NewConnectionDetails(connection.Name)
 
-	err := v.App().AddView(details)
-	if err != nil {
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to load connection details: %s", err))
-	}
+	v.App().AddView(details)
 }

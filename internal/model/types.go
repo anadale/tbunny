@@ -61,8 +61,8 @@ type App interface {
 	DisableKeys()
 	EnableKeys()
 	QueueUpdateDraw(f func())
-	AddView(v View) error
-	ReplaceOpenViews(v View) error
+	AddView(v View)
+	ReplaceOpenViews(v View)
 	CloseLastView()
 	OpenClusterDefaultView()
 	ShowModal(modal tview.Primitive)

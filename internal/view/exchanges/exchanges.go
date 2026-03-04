@@ -3,6 +3,7 @@ package exchanges
 import (
 	"fmt"
 	"log/slog"
+	"tbunny/internal/model"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
@@ -19,7 +20,7 @@ type Exchanges struct {
 	view.ClusterAwareResourceView[*ExchangeResource]
 }
 
-func NewExchanges() view.ClusterAwareResourceView[*ExchangeResource] {
+func NewExchanges() model.View {
 	e := Exchanges{
 		bindings.NewBindingsExtender[*ExchangeResource](
 			vhosts.NewVHostExtender[*ExchangeResource](

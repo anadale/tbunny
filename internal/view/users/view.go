@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"tbunny/internal/model"
 	"tbunny/internal/sl"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
@@ -17,7 +18,7 @@ type View struct {
 	view.ClusterAwareResourceView[*Resource]
 }
 
-func NewView() *View {
+func NewView() model.View {
 	v := View{
 		view.NewClusterAwareResourceTableView[*Resource]("Users", view.NewLiveUpdateStrategy()),
 	}
@@ -162,9 +163,7 @@ func (v *View) showPermissionsCmd(*tcell.EventKey) *tcell.EventKey {
 	}
 
 	pv := NewVhostsPermissionsView(user.Name)
-	if err := v.App().AddView(pv); err != nil {
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to load permissions: %s", err))
-	}
+	v.App().AddView(pv)
 
 	return nil
 }
@@ -176,9 +175,7 @@ func (v *View) showTopicsPermissionsCmd(*tcell.EventKey) *tcell.EventKey {
 	}
 
 	pv := NewTopicsPermissionsView(user.Name)
-	if err := v.App().AddView(pv); err != nil {
-		v.App().StatusLine().Error(fmt.Sprintf("Failed to load topics permissions: %s", err))
-	}
+	v.App().AddView(pv)
 
 	return nil
 }

@@ -59,6 +59,21 @@ type App struct {
 	statusLineUi *ui.StatusLine
 }
 
+type topLevelViewDescriptor struct {
+	description string
+	key         tcell.Key
+	factory     func() model.View
+}
+
+var topLevelViews = map[string]topLevelViewDescriptor{
+	"queues":      {"Queues", ui.KeyShiftQ, queues.NewQueues},
+	"exchanges":   {"Exchanges", ui.KeyShiftE, exchanges.NewExchanges},
+	"vhosts":      {"Virtual hosts", ui.KeyShiftV, vhosts.NewVHosts},
+	"clusters":    {"Clusters", ui.KeyShiftL, clusters.NewClusters},
+	"connections": {"Connections", ui.KeyShiftC, connections.NewConnections},
+	"users":       {"Users", ui.KeyShiftU, users.NewView},
+}
+
 func NewApp(version string) *App {
 	a := App{
 		Application:   tview.NewApplication(),
@@ -118,7 +133,7 @@ func (a *App) Init() error {
 		a.ClusterChanged(activeCluster)
 		a.OpenClusterDefaultView()
 	} else {
-		a.OpenClustersView()
+		a.openToplevelView("clusters")
 	}
 
 	a.layout()
@@ -163,7 +178,6 @@ func (a *App) ClusterConnectionRestored(*cluster.Cluster) {
 
 func (a *App) ConfigChanged(cfg *config.Config) {
 	a.config = cfg
-
 	//a.EnableMouse(cfg.UI.EnableMouse)
 }
 
@@ -240,12 +254,12 @@ func (a *App) bindKeys() {
 	}
 
 	if a.cluster != nil {
-		m.Add(ui.KeyShiftQ, ui.NewKeyActionWithGroup("Queues", a.goToQueuesCmd, false, 5))
-		m.Add(ui.KeyShiftE, ui.NewKeyActionWithGroup("Exchanges", a.goToExchangesCmd, false, 5))
-		m.Add(ui.KeyShiftV, ui.NewKeyActionWithGroup("Virtual hosts", a.goToVHostsCmd, false, 5))
-		m.Add(ui.KeyShiftL, ui.NewKeyActionWithGroup("Clusters", a.goToClustersCmd, false, 5))
-		m.Add(ui.KeyShiftO, ui.NewKeyActionWithGroup("Connections", a.goToConnectionsCmd, false, 5))
-		m.Add(ui.KeyShiftU, ui.NewKeyActionWithGroup("Users", a.goToUsersCmd, false, 5))
+		for _, v := range topLevelViews {
+			m.Add(v.key, ui.NewKeyActionWithGroup(v.description, func(*tcell.EventKey) *tcell.EventKey {
+				a.ReplaceOpenViews(v.factory())
+				return nil
+			}, false, 5))
+		}
 	}
 
 	a.actions = m
@@ -283,7 +297,7 @@ func (a *App) helpCmd(*tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	_ = a.openView(NewHelp(a), false)
+	a.openView(NewHelp(a), false)
 
 	return nil
 }
@@ -304,57 +318,6 @@ func (a *App) clearOrBackCmd(*tcell.EventKey) *tcell.EventKey {
 	}
 
 	a.CloseLastView()
-
-	return nil
-}
-
-func (a *App) goToQueuesCmd(*tcell.EventKey) *tcell.EventKey {
-	err := a.ReplaceOpenViews(queues.NewQueues())
-	if err != nil {
-		a.statusLine.Error(fmt.Sprintf("Failed to load queues: %s", err))
-	}
-
-	return nil
-}
-
-func (a *App) goToExchangesCmd(*tcell.EventKey) *tcell.EventKey {
-	err := a.ReplaceOpenViews(exchanges.NewExchanges())
-	if err != nil {
-		a.statusLine.Error(fmt.Sprintf("Failed to load exchanges: %s", err))
-	}
-
-	return nil
-}
-
-func (a *App) goToVHostsCmd(*tcell.EventKey) *tcell.EventKey {
-	err := a.ReplaceOpenViews(vhosts.NewVHosts())
-	if err != nil {
-		a.statusLine.Error(fmt.Sprintf("Failed to load virtual hosts: %s", err))
-	}
-
-	return nil
-}
-
-func (a *App) goToConnectionsCmd(*tcell.EventKey) *tcell.EventKey {
-	err := a.ReplaceOpenViews(connections.NewConnections())
-	if err != nil {
-		a.statusLine.Error(fmt.Sprintf("Failed to load connections: %s", err))
-	}
-
-	return nil
-}
-
-func (a *App) goToUsersCmd(*tcell.EventKey) *tcell.EventKey {
-	err := a.ReplaceOpenViews(users.NewView())
-	if err != nil {
-		a.statusLine.Error(fmt.Sprintf("Failed to load users: %s", err))
-	}
-
-	return nil
-}
-
-func (a *App) goToClustersCmd(*tcell.EventKey) *tcell.EventKey {
-	a.OpenClustersView()
 
 	return nil
 }
@@ -384,12 +347,12 @@ func (a *App) keyboard(event *tcell.EventKey) *tcell.EventKey {
 	return event
 }
 
-func (a *App) AddView(v model.View) error {
-	return a.openView(v, false)
+func (a *App) AddView(v model.View) {
+	a.openView(v, false)
 }
 
-func (a *App) ReplaceOpenViews(v model.View) error {
-	return a.openView(v, true)
+func (a *App) ReplaceOpenViews(v model.View) {
+	a.openView(v, true)
 }
 
 func (a *App) CloseLastView() {
@@ -398,38 +361,30 @@ func (a *App) CloseLastView() {
 	}
 }
 
-func (a *App) openView(v model.View, clearStack bool) error {
+func (a *App) openToplevelView(name string) {
+	if descriptor, ok := topLevelViews[name]; ok {
+		a.openView(descriptor.factory(), true)
+	}
+}
+
+func (a *App) openView(v model.View, clearStack bool) {
 	if err := v.Init(a); err != nil {
+		a.StatusLine().Error(fmt.Sprintf("Failed to load %s: %s", v.Name(), err))
 		slog.Error("View init failed",
 			sl.Error, err,
 			sl.Component, v.Name())
-		return err
+		return
 	}
 
 	if clearStack {
 		a.content.Clear()
 	}
-	a.content.Push(v)
 
-	return nil
+	a.content.Push(v)
 }
 
 func (a *App) OpenClusterDefaultView() {
-	if a.cluster == nil {
-		return
-	}
-
-	err := a.ReplaceOpenViews(queues.NewQueues())
-	if err != nil {
-		a.statusLine.Error(fmt.Sprintf("Failed to load queues: %s", err))
-	}
-}
-
-func (a *App) OpenClustersView() {
-	err := a.ReplaceOpenViews(clusters.NewClusters())
-	if err != nil {
-		a.statusLine.Error(fmt.Sprintf("Failed to load clusters: %s", err))
-	}
+	a.openToplevelView("queues")
 }
 
 func (a *App) ShowModal(modal tview.Primitive) {

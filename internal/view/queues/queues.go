@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/url"
 	"slices"
+	"tbunny/internal/model"
 	"tbunny/internal/rmq"
 	"tbunny/internal/skins"
 	"tbunny/internal/sl"
@@ -26,7 +27,7 @@ type Queues struct {
 	wideMode bool
 }
 
-func NewQueues() view.ResourceView[*QueueResource] {
+func NewQueues() model.View {
 	q := Queues{
 		bindings.NewBindingsExtender[*QueueResource](
 			vhosts.NewVHostExtender[*QueueResource](
@@ -152,19 +153,13 @@ func (q *Queues) getMessages(queue *QueueResource, ackMode rmq.AckMode, encoding
 
 	messagesView := NewMessages(messages, queue.Name, queue.Vhost)
 
-	err = q.App().AddView(messagesView)
-	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to load messages: %s", err))
-	}
+	q.App().AddView(messagesView)
 }
 
 func (q *Queues) showDetails(queue *QueueResource) {
 	details := NewQueueDetails(queue.Name, queue.Vhost)
 
-	err := q.App().AddView(details)
-	if err != nil {
-		q.App().StatusLine().Error(fmt.Sprintf("Failed to load queue details: %s", err))
-	}
+	q.App().AddView(details)
 }
 
 func (q *Queues) createQueueCmd(*tcell.EventKey) *tcell.EventKey {
