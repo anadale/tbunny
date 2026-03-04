@@ -9,7 +9,7 @@ import (
 
 type TopicPermissionsFn func(vhost, exchange, write, read string)
 
-func ShowCreateTopicPermissionsDialog(app model.App, vhosts []string, fetchExchanges func(vhost string) []string, okFn TopicPermissionsFn) {
+func ShowCreateTopicPermissionsDialog(mm model.ModalManager, vhosts []string, fetchExchanges func(vhost string) []string, okFn TopicPermissionsFn) {
 	f := ui.NewModalForm()
 
 	f.AddDropDown("Virtual host:", vhosts, 0, nil)
@@ -35,7 +35,7 @@ func ShowCreateTopicPermissionsDialog(app model.App, vhosts []string, fetchExcha
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -50,7 +50,7 @@ func ShowCreateTopicPermissionsDialog(app model.App, vhosts []string, fetchExcha
 	f.SetTitle("Create topic permissions")
 
 	modal := ui.NewModalDialog(f, 60, 10)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }
 
 func ShowEditTopicPermissionsDialog(app model.App, vhost, exchange, write, read string, okFn TopicPermissionsFn) {

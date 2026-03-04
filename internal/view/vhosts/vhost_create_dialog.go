@@ -10,7 +10,7 @@ import (
 // CreateVHostFn is a callback function for creating a virtual host.
 type CreateVHostFn func(name, description, tags, queueType string, tracing bool)
 
-func ShowCreateVHostDialog(app model.App, okFn CreateVHostFn) {
+func ShowCreateVHostDialog(mm model.ModalManager, okFn CreateVHostFn) {
 	f := ui.NewModalForm()
 
 	f.AddInputField("Virtual host name:", "", 30, nil, nil)
@@ -25,7 +25,7 @@ func ShowCreateVHostDialog(app model.App, okFn CreateVHostFn) {
 	f.AddButtons([]string{"Cancel", "Create"})
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -45,5 +45,5 @@ func ShowCreateVHostDialog(app model.App, okFn CreateVHostFn) {
 	f.SetTitle("Create virtual host")
 
 	modal := ui.NewModalDialog(f, 60, 11)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }

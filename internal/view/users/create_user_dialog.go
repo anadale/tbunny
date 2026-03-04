@@ -10,7 +10,7 @@ import (
 
 type CreateUserFn func(name, password, tags string)
 
-func ShowCreateUserDialog(app model.App, okFn CreateUserFn) {
+func ShowCreateUserDialog(mm model.ModalManager, okFn CreateUserFn) {
 	f := ui.NewModalForm()
 
 	f.AddInputField("User name:", "", 30, nil, nil)
@@ -31,7 +31,7 @@ func ShowCreateUserDialog(app model.App, okFn CreateUserFn) {
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -56,5 +56,5 @@ func ShowCreateUserDialog(app model.App, okFn CreateUserFn) {
 	f.SetTitle("Create users")
 
 	modal := ui.NewModalDialog(f, 60, 10)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }

@@ -19,6 +19,7 @@ type ViewActionsListener interface {
 	ViewActionsChanged(view View)
 }
 
+// View represents a view in the application.
 type View interface {
 	// Primitive returns the view primitive.
 	Primitive() tview.Primitive
@@ -45,6 +46,7 @@ type View interface {
 	RemoveActionsListener(listener ViewActionsListener)
 }
 
+// Filterer provides methods for filtering views.
 type Filterer interface {
 	// Filter applies a filter to the view.
 	Filter(filter string)
@@ -52,20 +54,43 @@ type Filterer interface {
 	Clear() bool
 }
 
+// Navigator provides methods for navigating between views.
+type Navigator interface {
+	// AddView adds a view to the stack of open views.
+	AddView(v View)
+	// ReplaceOpenViews replaces the current open views with a new top-level view.
+	ReplaceOpenViews(v View)
+	// CloseLastView closes the last view in the stack (the one that is visible).
+	CloseLastView()
+	// OpenClusterDefaultView opens the default view for the current cluster.
+	OpenClusterDefaultView()
+}
+
+// ModalManager manages modal windows (dialogs).
+type ModalManager interface {
+	// ShowModal shows a modal window.
+	ShowModal(modal tview.Primitive)
+	// DismissModal dismisses the modal window.
+	DismissModal()
+}
+
+// App represents the application.
 type App interface {
+	Navigator
+	ModalManager
+
+	// StatusLine returns the status line.
 	StatusLine() *StatusLine
 
 	// Actions returns global application key actions.
 	Actions() KeyMap
 
+	// DisableKeys disables keys processing.
 	DisableKeys()
+	// EnableKeys enables keys processing.
 	EnableKeys()
+	// QueueUpdateDraw queues a redrawing with the provided function.
 	QueueUpdateDraw(f func())
-	AddView(v View)
-	ReplaceOpenViews(v View)
-	CloseLastView()
-	OpenClusterDefaultView()
-	ShowModal(modal tview.Primitive)
-	DismissModal()
+	// OpenFilter opens a filter input and sets focus to it.
 	OpenFilter(filterer Filterer)
 }

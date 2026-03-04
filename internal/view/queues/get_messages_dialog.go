@@ -11,7 +11,7 @@ import (
 
 type GetMessagesFn func(queue *QueueResource, ackMode rmq.AckMode, encoding rmq.RequestedMessageEncoding, count int)
 
-func ShowGetMessagesDialog(app model.App, queue *QueueResource, okFn GetMessagesFn) {
+func ShowGetMessagesDialog(mm model.ModalManager, queue *QueueResource, okFn GetMessagesFn) {
 	f := ui.NewModalForm()
 
 	f.AddDropDown("Ack Mode:", []string{"Nack message requeue true", "Automatic ack", "Reject requeue true", "Reject requeue false"}, 0, nil)
@@ -26,7 +26,7 @@ func ShowGetMessagesDialog(app model.App, queue *QueueResource, okFn GetMessages
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -67,5 +67,5 @@ func ShowGetMessagesDialog(app model.App, queue *QueueResource, okFn GetMessages
 	f.SetTitle("Get messages")
 
 	modal := ui.NewModalDialog(f, 80, 9)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }

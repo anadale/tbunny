@@ -14,7 +14,7 @@ import (
 
 type CreateExchangeFn func(exchangeType, vhost, name string, durable, autoDelete bool, args map[string]any)
 
-func ShowCreateExchangeDialog(app model.App, okFn CreateExchangeFn) {
+func ShowCreateExchangeDialog(mm model.ModalManager, okFn CreateExchangeFn) {
 	f := ui.NewModalForm()
 	c := cluster.Current()
 
@@ -40,7 +40,7 @@ func ShowCreateExchangeDialog(app model.App, okFn CreateExchangeFn) {
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -60,7 +60,7 @@ func ShowCreateExchangeDialog(app model.App, okFn CreateExchangeFn) {
 	f.SetTitle("Create exchange")
 
 	modal := ui.NewModalDialog(f, 80, 11+argsField.GetFieldHeight())
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 
 	argsField.SetRowsChangedFunc(func(height int) { modal.Resize(80, 11+height) })
 }

@@ -14,7 +14,7 @@ import (
 
 type CreateQueueFn func(queueType, vhost, name string, durable bool, args map[string]any)
 
-func ShowCreateQueueDialog(app model.App, okFn CreateQueueFn) {
+func ShowCreateQueueDialog(mm model.ModalManager, okFn CreateQueueFn) {
 	f := ui.NewModalForm()
 	c := cluster.Current()
 
@@ -38,7 +38,7 @@ func ShowCreateQueueDialog(app model.App, okFn CreateQueueFn) {
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -63,7 +63,7 @@ func ShowCreateQueueDialog(app model.App, okFn CreateQueueFn) {
 	f.SetTitle("Create queue")
 
 	modal := ui.NewModalDialog(f, 80, 10+args.GetFieldHeight())
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 
 	args.SetRowsChangedFunc(func(height int) { modal.Resize(80, 10+height) })
 }

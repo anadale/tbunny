@@ -11,7 +11,7 @@ import (
 
 type MoveMessagesFn func(vhost, sourceQueue, destinationQueue string)
 
-func ShowMoveMessagesDialog(app model.App, vhost, sourceQueue string, destinationQueues []string, okFn MoveMessagesFn) {
+func ShowMoveMessagesDialog(mm model.ModalManager, vhost, sourceQueue string, destinationQueues []string, okFn MoveMessagesFn) {
 	f := ui.NewModalForm()
 
 	f.AddInputField("Destination queue:", "", 30, nil, nil)
@@ -34,7 +34,7 @@ func ShowMoveMessagesDialog(app model.App, vhost, sourceQueue string, destinatio
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -49,5 +49,5 @@ func ShowMoveMessagesDialog(app model.App, vhost, sourceQueue string, destinatio
 	f.SetTitle(fmt.Sprintf("Move messages from %s", sourceQueue))
 
 	modal := ui.NewModalDialog(f, 60, 7)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }

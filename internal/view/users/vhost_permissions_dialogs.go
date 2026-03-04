@@ -9,7 +9,7 @@ import (
 
 type VhostPermissionsFn func(vhost, configure, write, read string)
 
-func ShowCreateVhostPermissionsDialog(app model.App, availableVhosts []string, okFn VhostPermissionsFn) {
+func ShowCreateVhostPermissionsDialog(mm model.ModalManager, availableVhosts []string, okFn VhostPermissionsFn) {
 	f := ui.NewModalForm()
 
 	f.AddDropDown("Virtual host:", availableVhosts, 0, nil)
@@ -26,7 +26,7 @@ func ShowCreateVhostPermissionsDialog(app model.App, availableVhosts []string, o
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -41,7 +41,7 @@ func ShowCreateVhostPermissionsDialog(app model.App, availableVhosts []string, o
 	f.SetTitle("Create permissions")
 
 	modal := ui.NewModalDialog(f, 60, 10)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }
 
 func ShowEditVhostPermissionsDialog(app model.App, vhost, configure, write, read string, okFn VhostPermissionsFn) {

@@ -10,7 +10,7 @@ import (
 
 type EditUserFn func(changePassword bool, password, tags string)
 
-func ShowEditUserDialog(app model.App, name, tags string, okFn EditUserFn) {
+func ShowEditUserDialog(mm model.ModalManager, name, tags string, okFn EditUserFn) {
 	f := ui.NewModalForm()
 
 	f.AddCheckbox("Change password:", false, nil)
@@ -44,7 +44,7 @@ func ShowEditUserDialog(app model.App, name, tags string, okFn EditUserFn) {
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -64,5 +64,5 @@ func ShowEditUserDialog(app model.App, name, tags string, okFn EditUserFn) {
 	f.SetTitle("Edit users " + name)
 
 	modal := ui.NewModalDialog(f, 60, 10)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }

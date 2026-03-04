@@ -10,7 +10,7 @@ import (
 
 type PublishMessageFn func(vhost, queue string, props map[string]any, payload string, payloadEncoding rmq.PayloadEncoding)
 
-func ShowPublishMessageDialog(app model.App, vhost, queue string, okFn PublishMessageFn) {
+func ShowPublishMessageDialog(mm model.ModalManager, vhost, queue string, okFn PublishMessageFn) {
 	f := ui.NewModalForm()
 
 	f.AddDropDown("Delivery mode:", []string{rmq.MessageDeliveryModeNonPersistent.String(), rmq.MessageDeliveryModePersistent.String()}, 0, nil)
@@ -31,7 +31,7 @@ func ShowPublishMessageDialog(app model.App, vhost, queue string, okFn PublishMe
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -63,7 +63,7 @@ func ShowPublishMessageDialog(app model.App, vhost, queue string, okFn PublishMe
 	propertiesHeight := propertiesField.GetFieldHeight()
 
 	modal := ui.NewModalDialog(f, 80, modalHeight+headersHeight+propertiesHeight)
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 
 	resize := func() {
 		modal.Resize(80, modalHeight+headersHeight+propertiesHeight)

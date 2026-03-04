@@ -12,7 +12,7 @@ import (
 type CreateBindingFn func(otherType SubjectType, otherName, routingKey string, args map[string]any)
 type AutocompleteFn func() ([]string, error)
 
-func ShowCreateBindingDialog(app model.App, subjectType SubjectType, exchangesFn, queuesFn AutocompleteFn, okFn CreateBindingFn) {
+func ShowCreateBindingDialog(mm model.ModalManager, subjectType SubjectType, exchangesFn, queuesFn AutocompleteFn, okFn CreateBindingFn) {
 	f := ui.NewModalForm()
 
 	var exchanges []string
@@ -112,7 +112,7 @@ func ShowCreateBindingDialog(app model.App, subjectType SubjectType, exchangesFn
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -129,7 +129,7 @@ func ShowCreateBindingDialog(app model.App, subjectType SubjectType, exchangesFn
 	f.SetTitle("Create binding")
 
 	modal := ui.NewModalDialog(f, 80, 6+fieldsCount+argsField.GetFieldHeight())
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 
 	argsField.SetRowsChangedFunc(func(height int) { modal.Resize(80, 6+fieldsCount+height) })
 }

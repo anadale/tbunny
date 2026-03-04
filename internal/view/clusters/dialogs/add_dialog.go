@@ -18,7 +18,7 @@ const (
 	passwordLabel    = "Password:"
 )
 
-func ShowAddClusterDialog(app model.App, okFn AddClusterFn) {
+func ShowAddClusterDialog(mm model.ModalManager, okFn AddClusterFn) {
 	f := ui.NewModalForm()
 
 	f.AddInputField("Name:", "", 30, nil, nil)
@@ -36,7 +36,7 @@ func ShowAddClusterDialog(app model.App, okFn AddClusterFn) {
 
 	f.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		if buttonIndex != 1 {
-			app.DismissModal()
+			mm.DismissModal()
 			return
 		}
 
@@ -102,8 +102,6 @@ func ShowAddClusterDialog(app model.App, okFn AddClusterFn) {
 			f.RemoveFormItem(2)
 		}
 
-		var typeFieldsCount int
-
 		if text == directTypeOption {
 			typeFieldsCount = createDirectConnectionFields(f)
 		} else if text == k8sTypeOption {
@@ -116,7 +114,7 @@ func ShowAddClusterDialog(app model.App, okFn AddClusterFn) {
 		modal.Resize(formWidth, baseFormHeight+typeFieldsCount)
 	})
 
-	app.ShowModal(modal)
+	mm.ShowModal(modal)
 }
 
 func getAllowedTypes() []string {
