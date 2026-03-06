@@ -77,7 +77,7 @@ func (t *Table[R]) GetSelectedRow() (row R, ok bool) {
 		return
 	}
 
-	rowIdx, _ := t.Table.GetSelection()
+	rowIdx, _ := t.GetSelection()
 	if rowIdx < 1 || rowIdx > len(t.rows) {
 		return
 	}

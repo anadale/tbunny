@@ -335,7 +335,7 @@ func (c *Cluster) probeConnection() {
 
 	info, err = getClusterInfo(c.Client, c.config)
 	if err == nil {
-		vhosts, err = c.Client.ListVhosts()
+		vhosts, err = c.ListVhosts()
 	}
 
 	if err != nil {
@@ -389,57 +389,56 @@ func (c *Cluster) probeConnection() {
 
 func (c *Cluster) notifyActiveVirtualHostChanged() {
 	c.mx.RLock()
-	listeners := c.activeVirtualHostListeners
+	listeners := make([]ActiveVirtualHostListener, len(c.activeVirtualHostListeners))
+	copy(listeners, c.activeVirtualHostListeners)
 	c.mx.RUnlock()
 
 	for _, l := range listeners {
-		if t, ok := l.(ActiveVirtualHostListener); ok {
-			t.ClusterActiveVirtualHostChanged(c)
-		}
+		l.ClusterActiveVirtualHostChanged(c)
 	}
 }
 
 func (c *Cluster) notifyVirtualHostsChanged() {
 	c.mx.RLock()
-	listeners := c.virtualHostsListeners
+	listeners := make([]VirtualHostsListener, len(c.virtualHostsListeners))
+	copy(listeners, c.virtualHostsListeners)
 	c.mx.RUnlock()
 
 	for _, l := range listeners {
-		if t, ok := l.(VirtualHostsListener); ok {
-			t.ClusterVirtualHostsChanged(c)
-		}
+		l.ClusterVirtualHostsChanged(c)
 	}
 }
 
 func (c *Cluster) notifyInformationChanged() {
 	c.mx.RLock()
-	listeners := c.informationListeners
+	listeners := make([]InformationListener, len(c.informationListeners))
+	copy(listeners, c.informationListeners)
 	c.mx.RUnlock()
 
 	for _, l := range listeners {
-		if t, ok := l.(InformationListener); ok {
-			t.ClusterInformationChanged(c)
-		}
+		l.ClusterInformationChanged(c)
 	}
 }
 
 func (c *Cluster) notifyConnectionLost() {
-	for _, l := range c.connectionsListeners {
-		if t, ok := l.(ConnectionListener); ok {
-			t.ClusterConnectionLost(c)
-		}
+	c.mx.RLock()
+	listeners := make([]ConnectionListener, len(c.connectionsListeners))
+	copy(listeners, c.connectionsListeners)
+	c.mx.RUnlock()
+
+	for _, l := range listeners {
+		l.ClusterConnectionLost(c)
 	}
 }
 
 func (c *Cluster) notifyConnectionRestored() {
 	c.mx.RLock()
-	listeners := c.connectionsListeners
+	listeners := make([]ConnectionListener, len(c.connectionsListeners))
+	copy(listeners, c.connectionsListeners)
 	c.mx.RUnlock()
 
 	for _, l := range listeners {
-		if t, ok := l.(ConnectionListener); ok {
-			t.ClusterConnectionRestored(c)
-		}
+		l.ClusterConnectionRestored(c)
 	}
 }
 

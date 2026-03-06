@@ -74,7 +74,7 @@ func (c *ClusterInfo) update() {
 	row = c.setCell(row, info.RabbitMQVersion)
 	row = c.setCell(row, info.ManagementVersion)
 	row = c.setCell(row, info.ErlangVersion)
-	row = c.setCell(row, c.app.Version)
+	c.setCell(row, c.app.Version)
 }
 
 func (c *ClusterInfo) reset() {
@@ -84,7 +84,7 @@ func (c *ClusterInfo) reset() {
 	row = c.setCell(row, NAValue)
 	row = c.setCell(row, NAValue)
 	row = c.setCell(row, NAValue)
-	row = c.setCell(row, c.app.Version)
+	c.setCell(row, c.app.Version)
 }
 
 func (c *ClusterInfo) layout() {

@@ -5,7 +5,6 @@ import (
 	"tbunny/internal/view"
 
 	"github.com/gdamore/tcell/v2"
-	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 )
 
 type ResourceWithBindingDetails interface {
@@ -17,7 +16,6 @@ type ResourceWithBindingDetails interface {
 type Extender[R ResourceWithBindingDetails] struct {
 	view.ClusterAwareResourceView[R]
 
-	vertex      rabbithole.BindingVertex
 	subjectType SubjectType
 }
 

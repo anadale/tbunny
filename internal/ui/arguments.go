@@ -170,7 +170,7 @@ func (a *Arguments) SetValuePlaceholder(placeholder string) *Arguments {
 }
 
 func (a *Arguments) Draw(screen tcell.Screen) {
-	a.Box.DrawForSubclass(screen, a)
+	a.DrawForSubclass(screen, a)
 
 	x, y, width, height := a.GetInnerRect()
 	labelWidth := a.labelWidth
@@ -1341,7 +1341,7 @@ func (l *listEditor) IsEmpty() bool {
 }
 
 func (l *listEditor) Draw(screen tcell.Screen) {
-	l.Box.DrawForSubclass(screen, l)
+	l.DrawForSubclass(screen, l)
 	x, y, width, height := l.GetInnerRect()
 	l.grid.SetRect(x, y, width, height)
 	l.grid.Draw(screen)

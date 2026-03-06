@@ -63,23 +63,22 @@ func ShowAddClusterDialog(mm model.ModalManager, okFn AddClusterFn) {
 
 		_, t := typeField.GetCurrentOption()
 
-		if t == directTypeOption {
+		switch t {
+		case directTypeOption:
 			directParams, ok := collectDirectConnectionParameters(f)
 			if !ok {
 				return
 			}
-
 			params = cluster.ConnectionParameters{
 				Direct:   directParams,
 				Username: username,
 				Password: password,
 			}
-		} else if t == k8sTypeOption {
+		case k8sTypeOption:
 			k8sParams, ok := collectKubernetesConnectionParameters(f)
 			if !ok {
 				return
 			}
-
 			params = cluster.ConnectionParameters{
 				K8s:      k8sParams,
 				Username: username,
@@ -102,9 +101,10 @@ func ShowAddClusterDialog(mm model.ModalManager, okFn AddClusterFn) {
 			f.RemoveFormItem(2)
 		}
 
-		if text == directTypeOption {
+		switch text {
+		case directTypeOption:
 			typeFieldsCount = createDirectConnectionFields(f)
-		} else if text == k8sTypeOption {
+		case k8sTypeOption:
 			typeFieldsCount = createKubernetesConnectionFields(f)
 		}
 

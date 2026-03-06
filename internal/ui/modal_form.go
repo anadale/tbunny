@@ -118,7 +118,7 @@ func (f *ModalForm) AddButtons(labels []string) *ModalForm {
 
 // ClearButtons removes all buttons from the window.
 func (f *ModalForm) ClearButtons() *ModalForm {
-	f.ClearButtons()
+	f.Form.ClearButtons()
 
 	return f
 }

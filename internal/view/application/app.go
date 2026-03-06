@@ -181,6 +181,47 @@ func (a *App) QueueUpdateDraw(f func()) {
 	}()
 }
 
+func (a *App) DisableKeys() {
+	a.disableKeys = true
+}
+
+func (a *App) EnableKeys() {
+	a.disableKeys = false
+}
+
+func (a *App) AddView(v model.View) {
+	a.openView(v, false)
+}
+
+func (a *App) ReplaceOpenViews(v model.View) {
+	a.openView(v, true)
+}
+
+func (a *App) CloseLastView() {
+	if !a.content.Last() {
+		a.content.Pop()
+	}
+}
+
+func (a *App) OpenClusterDefaultView() {
+	a.openToplevelView("queues")
+}
+
+func (a *App) ShowModal(modal tview.Primitive) {
+	a.content.ShowModal(modal)
+}
+
+func (a *App) DismissModal() {
+	a.content.DismissModal()
+}
+
+func (a *App) OpenFilter(filterer model.Filterer) {
+	a.filter.Open(filterer)
+
+	a.filterVisible = true
+	a.layout()
+}
+
 func (a *App) layout() {
 	f := a.mainFlex
 
@@ -257,7 +298,7 @@ func (a *App) toggleCrumbsCmd(*tcell.EventKey) *tcell.EventKey {
 }
 
 func (a *App) quitCmd(*tcell.EventKey) *tcell.EventKey {
-	a.Application.Stop()
+	a.Stop()
 	os.Exit(0)
 
 	return nil
@@ -299,14 +340,6 @@ func (a *App) clearOrBackCmd(*tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
-func (a *App) DisableKeys() {
-	a.disableKeys = true
-}
-
-func (a *App) EnableKeys() {
-	a.disableKeys = false
-}
-
 func (a *App) keyboard(event *tcell.EventKey) *tcell.EventKey {
 	if a.disableKeys {
 		return nil
@@ -322,20 +355,6 @@ func (a *App) keyboard(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	return event
-}
-
-func (a *App) AddView(v model.View) {
-	a.openView(v, false)
-}
-
-func (a *App) ReplaceOpenViews(v model.View) {
-	a.openView(v, true)
-}
-
-func (a *App) CloseLastView() {
-	if !a.content.Last() {
-		a.content.Pop()
-	}
 }
 
 func (a *App) openToplevelView(name string) {
@@ -358,25 +377,6 @@ func (a *App) openView(v model.View, clearStack bool) {
 	}
 
 	a.content.Push(v)
-}
-
-func (a *App) OpenClusterDefaultView() {
-	a.openToplevelView("queues")
-}
-
-func (a *App) ShowModal(modal tview.Primitive) {
-	a.content.ShowModal(modal)
-}
-
-func (a *App) DismissModal() {
-	a.content.DismissModal()
-}
-
-func (a *App) OpenFilter(filterer model.Filterer) {
-	a.filter.Open(filterer)
-
-	a.filterVisible = true
-	a.layout()
 }
 
 func (a *App) closeFilter() {

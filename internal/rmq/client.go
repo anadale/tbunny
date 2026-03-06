@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -98,7 +99,9 @@ func executeAndParseRequest(client *Client, req *http.Request, rec interface{}) 
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func(body io.ReadCloser) {
+		_ = body.Close()
+	}(res.Body)
 
 	if err = json.NewDecoder(res.Body).Decode(&rec); err != nil {
 		return err

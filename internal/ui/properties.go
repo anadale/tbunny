@@ -135,7 +135,7 @@ func (p *Properties) GetValue() map[string]any {
 }
 
 func (p *Properties) Draw(screen tcell.Screen) {
-	p.Box.DrawForSubclass(screen, p)
+	p.DrawForSubclass(screen, p)
 
 	x, y, width, height := p.GetInnerRect()
 	labelWidth := p.labelWidth
