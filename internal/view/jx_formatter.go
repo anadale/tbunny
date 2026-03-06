@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 	"tbunny/internal/skins"
+	"tbunny/internal/utils"
 
 	"github.com/go-faster/jx"
 )
 
 type JxFormatter struct {
-	b                 strings.Builder
+	b                 *strings.Builder
 	indentWidth       int
 	indentLevel       int
 	bgColor           string
@@ -27,7 +28,7 @@ func NewJxFormatter(skin *skins.Skin) *JxFormatter {
 	j := skin.Views.Json
 
 	f := JxFormatter{
-		b:                 strings.Builder{},
+		b:                 &strings.Builder{},
 		indentWidth:       j.IndentWidth,
 		bgColor:           j.BgColor.String(),
 		propertyNameColor: j.PropertyNameColor.String(),
@@ -74,7 +75,7 @@ func (f *JxFormatter) formatValue(d *jx.Decoder) (err error) {
 }
 
 func (f *JxFormatter) formatObject(d *jx.Decoder) error {
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-]{\n", f.braceColor, f.bgColor))
+	utils.Sbprintf(f.b, "[%s:%s:-]{\n", f.braceColor, f.bgColor)
 	f.indentLevel++
 
 	iter, err := d.ObjIter()
@@ -86,13 +87,13 @@ func (f *JxFormatter) formatObject(d *jx.Decoder) error {
 
 	for iter.Next() {
 		if !first {
-			f.b.WriteString(fmt.Sprintf("[%s:%s:-],\n", f.punctuationColor, f.bgColor))
+			utils.Sbprintf(f.b, "[%s:%s:-],\n", f.punctuationColor, f.bgColor)
 		}
 
 		first = false
 
 		f.writeIndent()
-		f.b.WriteString(fmt.Sprintf("[%s:%s:-]%q[%s:%s:-]: ", f.propertyNameColor, f.bgColor, string(iter.Key()), f.punctuationColor, f.bgColor))
+		utils.Sbprintf(f.b, "[%s:%s:-]%q[%s:%s:-]: ", f.propertyNameColor, f.bgColor, string(iter.Key()), f.punctuationColor, f.bgColor)
 
 		err = f.formatValue(d)
 		if err != nil {
@@ -105,13 +106,13 @@ func (f *JxFormatter) formatObject(d *jx.Decoder) error {
 	f.indentLevel--
 	f.writeIndent()
 
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-]}", f.braceColor, f.bgColor))
+	utils.Sbprintf(f.b, "[%s:%s:-]}", f.braceColor, f.bgColor)
 
 	return nil
 }
 
 func (f *JxFormatter) formatArray(d *jx.Decoder) error {
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-][\n", f.bracketColor, f.bgColor))
+	utils.Sbprintf(f.b, "[%s:%s:-][\n", f.bracketColor, f.bgColor)
 	f.indentLevel++
 
 	iter, err := d.ArrIter()
@@ -123,7 +124,7 @@ func (f *JxFormatter) formatArray(d *jx.Decoder) error {
 
 	for iter.Next() {
 		if !first {
-			f.b.WriteString(fmt.Sprintf("[%s:%s:-],\n", f.punctuationColor, f.bgColor))
+			utils.Sbprintf(f.b, "[%s:%s:-],\n", f.punctuationColor, f.bgColor)
 		}
 
 		first = false
@@ -137,13 +138,13 @@ func (f *JxFormatter) formatArray(d *jx.Decoder) error {
 	}
 
 	if !first {
-		f.b.WriteString("\n")
+		utils.Sbprintf(f.b, "\n")
 	}
 
 	f.indentLevel--
 	f.writeIndent()
 
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-]]", f.bracketColor, f.bgColor))
+	utils.Sbprintf(f.b, "[%s:%s:-]]", f.bracketColor, f.bgColor)
 
 	return nil
 }
@@ -154,7 +155,7 @@ func (f *JxFormatter) formatString(d *jx.Decoder) error {
 		return err
 	}
 
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-]%q", f.stringColor, f.bgColor, v))
+	utils.Sbprintf(f.b, "[%s:%s:-]%q", f.stringColor, f.bgColor, v)
 
 	return nil
 }
@@ -165,7 +166,7 @@ func (f *JxFormatter) formatNumber(d *jx.Decoder) error {
 		return err
 	}
 
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-]%v", f.numberColor, f.bgColor, v))
+	utils.Sbprintf(f.b, "[%s:%s:-]%v", f.numberColor, f.bgColor, v)
 
 	return nil
 }
@@ -176,7 +177,7 @@ func (f *JxFormatter) formatBoolean(d *jx.Decoder) error {
 		return err
 	}
 
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-]%t", f.booleanColor, f.bgColor, v))
+	utils.Sbprintf(f.b, "[%s:%s:-]%t", f.booleanColor, f.bgColor, v)
 
 	return nil
 }
@@ -187,7 +188,7 @@ func (f *JxFormatter) formatNull(d *jx.Decoder) error {
 		return err
 	}
 
-	f.b.WriteString(fmt.Sprintf("[%s:%s:-]%s", f.nullColor, f.bgColor, "null"))
+	utils.Sbprintf(f.b, "[%s:%s:-]%s", f.nullColor, f.bgColor, "null")
 
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"tbunny/internal/skins"
 	"tbunny/internal/ui"
 	"tbunny/internal/ui/dialog"
+	"tbunny/internal/utils"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -213,31 +214,25 @@ func (b *ResourceTableView[R]) deleteCmd(*tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
-func (b *ResourceTableView[R]) openFilterCmd(*tcell.EventKey) *tcell.EventKey {
-	b.App().OpenFilter(b)
-
-	return nil
-}
-
 func (b *ResourceTableView[R]) updateTitle() {
 	count := b.Ui().GetRowCount()
 	if count > 0 {
 		count--
 	}
 
-	var sb strings.Builder
+	sb := &strings.Builder{}
 
 	sb.WriteString(" ")
-	sb.WriteString(fmt.Sprintf(titleNameFragmentFmt, b.Name()))
+	utils.Sbprintf(sb, titleNameFragmentFmt, b.Name())
 
 	if b.path != "" {
-		sb.WriteString(fmt.Sprintf(titlePathFragmentFmt, b.path))
+		utils.Sbprintf(sb, titlePathFragmentFmt, b.path)
 	}
 
-	sb.WriteString(fmt.Sprintf(titleCountFragmentFmt, count))
+	utils.Sbprintf(sb, titleCountFragmentFmt, count)
 
 	if b.filter != "" {
-		sb.WriteString(fmt.Sprintf(titleFilterFragmentFmt, b.filter))
+		utils.Sbprintf(sb, titleFilterFragmentFmt, b.filter)
 	}
 
 	sb.WriteString(" ")

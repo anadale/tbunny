@@ -132,7 +132,7 @@ func (v *ConnectionDetails) formatDetails(b *strings.Builder) {
 
 	b.WriteString("[caption]Details[-]\n\n")
 	for _, lf := range detailsFormatters {
-		b.WriteString(fmt.Sprintf("[label]%s[-] [value]%s[-]\n", utils.PadRight(lf.label, maxLabelLength), lf.fn(v.connection)))
+		utils.Sbprintf(b, "[label]%s[-] [value]%s[-]\n", utils.PadRight(lf.label, maxLabelLength), lf.fn(v.connection))
 	}
 }
 
@@ -166,13 +166,13 @@ func (v *ConnectionDetails) formatMap(b *strings.Builder, m map[string]any, padd
 			b.WriteString(paddingStr)
 		}
 
-		b.WriteString(fmt.Sprintf("[label]%s:%s[-] ", key, strings.Repeat(" ", maxKeyLength-len(key))))
+		utils.Sbprintf(b, "[label]%s:%s[-] ", key, strings.Repeat(" ", maxKeyLength-len(key)))
 
 		switch value := m[key].(type) {
 		case map[string]any:
 			v.formatMap(b, value, padding+maxKeyLength+2)
 		default:
-			b.WriteString(fmt.Sprintf("[value]%v[-]\n", value))
+			utils.Sbprintf(b, "[value]%v[-]\n", value)
 		}
 	}
 }

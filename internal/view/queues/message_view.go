@@ -67,9 +67,7 @@ func (v *MessageView) SkinChanged(skin *skins.Skin) {
 }
 
 func (v *MessageView) updateTitle() {
-	var title string
-
-	title = view.SkinTitle(fmt.Sprintf(MessageViewTitleFmt, v.Name(), v.message.index))
+	title := view.SkinTitle(fmt.Sprintf(MessageViewTitleFmt, v.Name(), v.message.index))
 
 	v.Ui().SetTitle(title)
 }
@@ -78,22 +76,22 @@ func (v *MessageView) updateText() {
 	cs := fmt.Sprintf("%s:%s:-", v.skin.Views.Stats.CaptionFgColor.String(), v.skin.Views.Stats.CaptionBgColor.String())
 	div := fmt.Sprintf("[%s]%s[-]\n", cs, strings.Repeat("─", 60))
 
-	var b strings.Builder
+	b := &strings.Builder{}
 
 	if v.showProperties {
-		b.WriteString(fmt.Sprintf("[%s]Properties[-]\n", cs))
+		utils.Sbprintf(b, "[%s]Properties[-]\n", cs)
 		b.WriteString(div)
 		b.WriteString(v.formatProperties())
 
 		if len(v.message.Properties.Headers) > 0 {
 			b.WriteString("\n")
-			b.WriteString(fmt.Sprintf("[%s]Headers[-]\n", cs))
+			utils.Sbprintf(b, "[%s]Headers[-]\n", cs)
 			b.WriteString(div)
 			b.WriteString(v.formatKeyValuePairs(utils.NewKeyValuePairsFromMap(v.message.Properties.Headers).Sort()))
 		}
 
 		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("[%s]Payload[-]\n", cs))
+		utils.Sbprintf(b, "[%s]Payload[-]\n", cs)
 		b.WriteString(div)
 	}
 
@@ -166,7 +164,7 @@ func (v *MessageView) formatProperties() string {
 func (v *MessageView) formatKeyValuePairs(pairs utils.KeyValuePairs) string {
 	ls := fmt.Sprintf("%s:%s:-", v.skin.Views.Stats.LabelFgColor.String(), v.skin.Views.Stats.BgColor.String())
 
-	var b strings.Builder
+	b := &strings.Builder{}
 	maxKeyLen := 0
 
 	for _, kvp := range pairs {
@@ -176,8 +174,8 @@ func (v *MessageView) formatKeyValuePairs(pairs utils.KeyValuePairs) string {
 	}
 
 	for _, kvp := range pairs {
-		b.WriteString(fmt.Sprintf("[%s]%s:[-]%s", ls, kvp.Key, strings.Repeat(" ", maxKeyLen-len(kvp.Key)+1)))
-		v.formatKvpValue(kvp.Value, &b)
+		utils.Sbprintf(b, "[%s]%s:[-]%s", ls, kvp.Key, strings.Repeat(" ", maxKeyLen-len(kvp.Key)+1))
+		v.formatKvpValue(kvp.Value, b)
 		b.WriteString("\n")
 	}
 
@@ -190,20 +188,20 @@ func (v *MessageView) formatKvpValue(value any, b *strings.Builder) {
 		if strings.Contains(typed, "\n") {
 			b.WriteString("\n")
 		}
-		b.WriteString(fmt.Sprintf("[%s]%s[-]", v.skin.Views.Stats.ValueFgColor.String(), tview.Escape(typed)))
+		utils.Sbprintf(b, "[%s]%s[-]", v.skin.Views.Stats.ValueFgColor.String(), tview.Escape(typed))
 	case int, int8, int16, int32, int64:
-		b.WriteString(fmt.Sprintf("[%s]%d[-]", v.skin.Views.Stats.ValueFgColor.String(), typed))
+		utils.Sbprintf(b, "[%s]%d[-]", v.skin.Views.Stats.ValueFgColor.String(), typed)
 	case float32, float64:
-		b.WriteString(fmt.Sprintf("[%s]%g[-]", v.skin.Views.Stats.ValueFgColor.String(), typed))
+		utils.Sbprintf(b, "[%s]%g[-]", v.skin.Views.Stats.ValueFgColor.String(), typed)
 	case bool:
-		b.WriteString(fmt.Sprintf("[%s]%t[-]", v.skin.Views.Stats.ValueFgColor.String(), typed))
+		utils.Sbprintf(b, "[%s]%t[-]", v.skin.Views.Stats.ValueFgColor.String(), typed)
 	case []any:
 		v.formatKvpList(typed, b)
 	}
 }
 
 func (v *MessageView) formatKvpList(list []any, b *strings.Builder) {
-	b.WriteString(fmt.Sprintf("[%s][", v.skin.Views.Json.BracketColor.String()))
+	utils.Sbprintf(b, "[%s][", v.skin.Views.Json.BracketColor.String())
 
 	length := len(list)
 
@@ -211,11 +209,11 @@ func (v *MessageView) formatKvpList(list []any, b *strings.Builder) {
 		v.formatKvpValue(value, b)
 
 		if i < length-1 {
-			b.WriteString(fmt.Sprintf("[%s], ", v.skin.Views.Json.PunctuationColor.String()))
+			utils.Sbprintf(b, "[%s], ", v.skin.Views.Json.PunctuationColor.String())
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("[%s]]", v.skin.Views.Json.BracketColor.String()))
+	utils.Sbprintf(b, "[%s]]", v.skin.Views.Json.BracketColor.String())
 }
 
 func (v *MessageView) formatPayload() string {

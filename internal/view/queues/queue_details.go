@@ -6,6 +6,7 @@ import (
 	"tbunny/internal/model"
 	"tbunny/internal/skins"
 	"tbunny/internal/ui"
+	"tbunny/internal/utils"
 	"tbunny/internal/view"
 
 	"github.com/gdamore/tcell/v2"
@@ -723,7 +724,7 @@ func (q *QueueDetails) bindScrollKeys(km ui.KeyMap) {
 }
 
 func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) string {
-	var b strings.Builder
+	b := new(strings.Builder)
 
 	// Messages
 	transient := qi.Messages - qi.MessagesPersistent
@@ -734,7 +735,7 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 	if pagedOut < 0 {
 		pagedOut = 0
 	}
-	view.WriteTextSection(&b, "Messages", []view.TextRow{
+	view.WriteTextSection(b, "Messages", []view.TextRow{
 		{Label: "Ready:", Value: fmt.Sprintf("%d", qi.MessagesReady)},
 		{Label: "Unacked:", Value: fmt.Sprintf("%d", qi.MessagesUnacknowledged)},
 		{Label: "Total:", Value: fmt.Sprintf("%d", qi.Messages)},
@@ -768,14 +769,14 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 			{Label: "Get (auto):", Value: "0.00"},
 		}
 	}
-	view.WriteTextSection(&b, "Rates (msg/s)", rateRows)
+	view.WriteTextSection(b, "Rates (msg/s)", rateRows)
 
 	// Configuration
 	queueVersion := "N/A"
 	if v, ok := qi.Arguments["x-queue-version"].(float64); ok {
 		queueVersion = fmt.Sprintf("%.0f", v)
 	}
-	view.WriteTextSection(&b, "Configuration", []view.TextRow{
+	view.WriteTextSection(b, "Configuration", []view.TextRow{
 		{Label: "Type:", Value: qi.Type},
 		{Label: "Durable:", Value: fmt.Sprintf("%t", qi.Durable)},
 		{Label: "Auto delete:", Value: fmt.Sprintf("%t", qi.AutoDelete)},
@@ -795,7 +796,7 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 			if key == "x-queue-version" || key == "x-queue-type" {
 				continue
 			}
-			b.WriteString(fmt.Sprintf("[value]%s: %v[-]\n", key, value))
+			utils.Sbprintf(b, "[value]%s: %v[-]\n", key, value)
 			hasArgs = true
 		}
 		if !hasArgs {
@@ -808,7 +809,7 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 	b.WriteString("[caption]Policy[-]\n")
 	b.WriteString(strings.Repeat("─", 30) + "\n")
 	if qi.Policy != "" {
-		b.WriteString(fmt.Sprintf("[value]%s[-]\n", qi.Policy))
+		utils.Sbprintf(b, "[value]%s[-]\n", qi.Policy)
 	} else {
 		b.WriteString("[value]N/A[-]\n")
 	}
@@ -823,7 +824,7 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 	if qi.ConsumerUtilisation > 0 {
 		consumerCapacity = fmt.Sprintf("%.0f%%", qi.ConsumerUtilisation*100)
 	}
-	view.WriteTextSection(&b, "State & Resources", []view.TextRow{
+	view.WriteTextSection(b, "State & Resources", []view.TextRow{
 		{Label: "State:", Value: stateStatus},
 		{Label: "Consumers:", Value: fmt.Sprintf("%d", qi.Consumers)},
 		{Label: "Consumer capacity:", Value: consumerCapacity},
@@ -835,7 +836,7 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 	b.WriteString("[caption]Node[-]\n")
 	b.WriteString(strings.Repeat("─", 30) + "\n")
 	if qi.Node != "" {
-		b.WriteString(fmt.Sprintf("[value]%s[-]\n", qi.Node))
+		utils.Sbprintf(b, "[value]%s[-]\n", qi.Node)
 	} else {
 		b.WriteString("[value]N/A[-]\n")
 	}
