@@ -5,6 +5,7 @@ import (
 	"strings"
 	"tbunny/internal/model"
 	"tbunny/internal/skins"
+	"tbunny/internal/ui"
 	"tbunny/internal/view"
 
 	"github.com/gdamore/tcell/v2"
@@ -91,7 +92,8 @@ type QueueDetails struct {
 	nodeHeader      *tview.TextView
 
 	// For scrollable mode.
-	scrollableView *tview.TextView
+	scrollableView  *tview.TextView
+	relayoutPending bool
 }
 
 func NewQueueDetails(name, vhost string) *QueueDetails {
@@ -107,6 +109,7 @@ func NewQueueDetails(name, vhost string) *QueueDetails {
 	}
 
 	q.SetUpdateFn(q.performUpdate)
+	q.AddBindingKeysFn(q.bindScrollKeys)
 
 	return &q
 }
@@ -124,6 +127,31 @@ func (q *QueueDetails) Init(app model.App) (err error) {
 	q.useScrollableMode = true
 	q.createLayout()
 	q.updateTitle()
+
+	// Detect terminal resize and switch layout mode without waiting for the next data refresh.
+	q.Ui().SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+		// x, y, width, height are the outer rect; compute inner rect for both
+		// the mode check and the mandatory return value.
+		innerX, innerY, innerW, innerH := q.Ui().GetInnerRect()
+		if q.queueInfo != nil && (innerW < minWidthForFourColumns) != q.useScrollableMode && !q.relayoutPending {
+			q.relayoutPending = true
+			q.App().QueueUpdateDraw(func() {
+				q.relayoutPending = false
+				_, _, w, _ := q.Ui().GetInnerRect()
+				previousMode := q.useScrollableMode
+				q.useScrollableMode = w < minWidthForFourColumns
+				if previousMode != q.useScrollableMode {
+					q.createLayout()
+					if q.useScrollableMode {
+						q.updateScrollableView()
+					} else {
+						q.updateColumnarView()
+					}
+				}
+			})
+		}
+		return innerX, innerY, innerW, innerH
+	})
 
 	return nil
 }
@@ -318,36 +346,8 @@ func (q *QueueDetails) createScrollableLayout() {
 	q.scrollableView.SetScrollable(true)
 	q.scrollableView.SetWordWrap(false)
 
-	// Handle scrolling keys.
-	q.scrollableView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyUp:
-			row, col := q.scrollableView.GetScrollOffset()
-			q.scrollableView.ScrollTo(row-1, col)
-			return nil
-		case tcell.KeyDown:
-			row, col := q.scrollableView.GetScrollOffset()
-			q.scrollableView.ScrollTo(row+1, col)
-			return nil
-		case tcell.KeyPgUp:
-			row, col := q.scrollableView.GetScrollOffset()
-			q.scrollableView.ScrollTo(row-10, col)
-			return nil
-		case tcell.KeyPgDn:
-			row, col := q.scrollableView.GetScrollOffset()
-			q.scrollableView.ScrollTo(row+10, col)
-			return nil
-		case tcell.KeyHome:
-			q.scrollableView.ScrollToBeginning()
-			return nil
-		case tcell.KeyEnd:
-			q.scrollableView.ScrollToEnd()
-			return nil
-		default:
-		}
-		return event
-	})
-
+	// Scroll keys are handled by the outer Flex via bindScrollKeys,
+	// so focus stays on the Flex and works regardless of mode switches.
 	q.Ui().AddItem(q.scrollableView, 0, 1, false)
 }
 
@@ -690,72 +690,102 @@ func (q *QueueDetails) applyStyles() {
 	}
 }
 
+func (q *QueueDetails) bindScrollKeys(km ui.KeyMap) {
+	scroll := func(delta int) ui.ActionHandler {
+		return func(e *tcell.EventKey) *tcell.EventKey {
+			if !q.useScrollableMode || q.scrollableView == nil {
+				return e
+			}
+			row, col := q.scrollableView.GetScrollOffset()
+			q.scrollableView.ScrollTo(row+delta, col)
+			return nil
+		}
+	}
+
+	km.Add(tcell.KeyUp, ui.NewHiddenKeyAction("Scroll Up", scroll(-1)))
+	km.Add(tcell.KeyDown, ui.NewHiddenKeyAction("Scroll Down", scroll(1)))
+	km.Add(tcell.KeyPgUp, ui.NewHiddenKeyAction("Page Up", scroll(-10)))
+	km.Add(tcell.KeyPgDn, ui.NewHiddenKeyAction("Page Down", scroll(10)))
+	km.Add(tcell.KeyHome, ui.NewHiddenKeyAction("Scroll to Top", func(e *tcell.EventKey) *tcell.EventKey {
+		if !q.useScrollableMode || q.scrollableView == nil {
+			return e
+		}
+		q.scrollableView.ScrollToBeginning()
+		return nil
+	}))
+	km.Add(tcell.KeyEnd, ui.NewHiddenKeyAction("Scroll to End", func(e *tcell.EventKey) *tcell.EventKey {
+		if !q.useScrollableMode || q.scrollableView == nil {
+			return e
+		}
+		q.scrollableView.ScrollToEnd()
+		return nil
+	}))
+}
+
 func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) string {
 	var b strings.Builder
 
 	// Messages
-	b.WriteString("[caption]Messages[-]\n")
-	b.WriteString("──────────────────────────────\n")
-	b.WriteString(fmt.Sprintf("[label]Ready:[-]               [value]%d[-]\n", qi.MessagesReady))
-	b.WriteString(fmt.Sprintf("[label]Unacked:[-]             [value]%d[-]\n", qi.MessagesUnacknowledged))
-	b.WriteString(fmt.Sprintf("[label]Total:[-]               [value]%d[-]\n", qi.Messages))
-	b.WriteString(fmt.Sprintf("[label]In memory:[-]           [value]%d[-]\n", qi.MessagesRAM))
-	b.WriteString(fmt.Sprintf("[label]Persistent:[-]          [value]%d[-]\n", qi.MessagesPersistent))
-
 	transient := qi.Messages - qi.MessagesPersistent
 	if transient < 0 {
 		transient = 0
 	}
-	b.WriteString(fmt.Sprintf("[label]Transient:[-]           [value]%d[-]\n", transient))
-
 	pagedOut := qi.Messages - qi.MessagesRAM
 	if pagedOut < 0 {
 		pagedOut = 0
 	}
-	b.WriteString(fmt.Sprintf("[label]Paged Out:[-]           [value]%d[-]\n", pagedOut))
-	b.WriteString(fmt.Sprintf("[label]Message bytes:[-]       [value]%s[-]\n", view.FormatBytes(qi.MessagesBytes)))
-	b.WriteString("\n")
+	view.WriteTextSection(&b, "Messages", []view.TextRow{
+		{Label: "Ready:", Value: fmt.Sprintf("%d", qi.MessagesReady)},
+		{Label: "Unacked:", Value: fmt.Sprintf("%d", qi.MessagesUnacknowledged)},
+		{Label: "Total:", Value: fmt.Sprintf("%d", qi.Messages)},
+		{Label: "In memory:", Value: fmt.Sprintf("%d", qi.MessagesRAM)},
+		{Label: "Persistent:", Value: fmt.Sprintf("%d", qi.MessagesPersistent)},
+		{Label: "Transient:", Value: fmt.Sprintf("%d", transient)},
+		{Label: "Paged Out:", Value: fmt.Sprintf("%d", pagedOut)},
+		{Label: "Message bytes:", Value: view.FormatBytes(qi.MessagesBytes)},
+	})
 
 	// Message Rates
-	b.WriteString("[caption]Rates (msg/s)[-]\n")
-	b.WriteString("──────────────────────────────\n")
+	var rateRows []view.TextRow
 	if qi.MessageStats != nil {
-		b.WriteString(fmt.Sprintf("[label]Publish:[-]             [value]%.2f[-]\n", qi.MessageStats.PublishDetails.Rate))
-		b.WriteString(fmt.Sprintf("[label]Deliver (manual):[-]    [value]%.2f[-]\n", qi.MessageStats.DeliverDetails.Rate))
-		b.WriteString(fmt.Sprintf("[label]Deliver (auto):[-]      [value]%.2f[-]\n", qi.MessageStats.DeliverNoAckDetails.Rate))
-		b.WriteString(fmt.Sprintf("[label]Consumer ack:[-]        [value]%.2f[-]\n", qi.MessageStats.AckDetails.Rate))
-		b.WriteString(fmt.Sprintf("[label]Redelivered:[-]         [value]%.2f[-]\n", qi.MessageStats.RedeliverDetails.Rate))
-		b.WriteString(fmt.Sprintf("[label]Get (manual):[-]        [value]%.2f[-]\n", qi.MessageStats.GetDetails.Rate))
-		b.WriteString(fmt.Sprintf("[label]Get (auto):[-]          [value]%.2f[-]\n", qi.MessageStats.GetNoAckDetails.Rate))
+		rateRows = []view.TextRow{
+			{Label: "Publish:", Value: fmt.Sprintf("%.2f", qi.MessageStats.PublishDetails.Rate)},
+			{Label: "Deliver (manual):", Value: fmt.Sprintf("%.2f", qi.MessageStats.DeliverDetails.Rate)},
+			{Label: "Deliver (auto):", Value: fmt.Sprintf("%.2f", qi.MessageStats.DeliverNoAckDetails.Rate)},
+			{Label: "Consumer ack:", Value: fmt.Sprintf("%.2f", qi.MessageStats.AckDetails.Rate)},
+			{Label: "Redelivered:", Value: fmt.Sprintf("%.2f", qi.MessageStats.RedeliverDetails.Rate)},
+			{Label: "Get (manual):", Value: fmt.Sprintf("%.2f", qi.MessageStats.GetDetails.Rate)},
+			{Label: "Get (auto):", Value: fmt.Sprintf("%.2f", qi.MessageStats.GetNoAckDetails.Rate)},
+		}
 	} else {
-		b.WriteString("[label]Publish:[-]             [value]0.00[-]\n")
-		b.WriteString("[label]Deliver (manual):[-]    [value]0.00[-]\n")
-		b.WriteString("[label]Deliver (auto):[-]      [value]0.00[-]\n")
-		b.WriteString("[label]Consumer ack:[-]        [value]0.00[-]\n")
-		b.WriteString("[label]Redelivered:[-]         [value]0.00[-]\n")
-		b.WriteString("[label]Get (manual):[-]        [value]0.00[-]\n")
-		b.WriteString("[label]Get (auto):[-]          [value]0.00[-]\n")
+		rateRows = []view.TextRow{
+			{Label: "Publish:", Value: "0.00"},
+			{Label: "Deliver (manual):", Value: "0.00"},
+			{Label: "Deliver (auto):", Value: "0.00"},
+			{Label: "Consumer ack:", Value: "0.00"},
+			{Label: "Redelivered:", Value: "0.00"},
+			{Label: "Get (manual):", Value: "0.00"},
+			{Label: "Get (auto):", Value: "0.00"},
+		}
 	}
-	b.WriteString("\n")
+	view.WriteTextSection(&b, "Rates (msg/s)", rateRows)
 
 	// Configuration
-	b.WriteString("[caption]Configuration[-]\n")
-	b.WriteString("──────────────────────────────\n")
-	b.WriteString(fmt.Sprintf("[label]Type:[-]                [value]%s[-]\n", qi.Type))
-	b.WriteString(fmt.Sprintf("[label]Durable:[-]             [value]%t[-]\n", qi.Durable))
-	b.WriteString(fmt.Sprintf("[label]Auto delete:[-]         [value]%t[-]\n", qi.AutoDelete))
-	b.WriteString(fmt.Sprintf("[label]Exclusive:[-]           [value]%t[-]\n", qi.Exclusive))
-
-	if queueVersion, ok := qi.Arguments["x-queue-version"].(float64); ok {
-		b.WriteString(fmt.Sprintf("[label]Queue version:[-]       [value]%.0f[-]\n", queueVersion))
-	} else {
-		b.WriteString("[label]Queue version:[-]       [value]N/A[-]\n")
+	queueVersion := "N/A"
+	if v, ok := qi.Arguments["x-queue-version"].(float64); ok {
+		queueVersion = fmt.Sprintf("%.0f", v)
 	}
-	b.WriteString("\n")
+	view.WriteTextSection(&b, "Configuration", []view.TextRow{
+		{Label: "Type:", Value: qi.Type},
+		{Label: "Durable:", Value: fmt.Sprintf("%t", qi.Durable)},
+		{Label: "Auto delete:", Value: fmt.Sprintf("%t", qi.AutoDelete)},
+		{Label: "Exclusive:", Value: fmt.Sprintf("%t", qi.Exclusive)},
+		{Label: "Queue version:", Value: queueVersion},
+	})
 
 	// Arguments
 	b.WriteString("[caption]Arguments[-]\n")
-	b.WriteString("──────────────────────────────\n")
+	b.WriteString(strings.Repeat("─", 30) + "\n")
 	if len(qi.Arguments) == 0 {
 		b.WriteString("[value]N/A[-]\n")
 	} else {
@@ -776,7 +806,7 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 
 	// Policy
 	b.WriteString("[caption]Policy[-]\n")
-	b.WriteString("──────────────────────────────\n")
+	b.WriteString(strings.Repeat("─", 30) + "\n")
 	if qi.Policy != "" {
 		b.WriteString(fmt.Sprintf("[value]%s[-]\n", qi.Policy))
 	} else {
@@ -785,28 +815,25 @@ func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) s
 	b.WriteString("\n")
 
 	// State & Resources
-	b.WriteString("[caption]State & Resources[-]\n")
-	b.WriteString("──────────────────────────────\n")
+	stateStatus := "N/A"
 	if qi.Status != "" {
-		b.WriteString(fmt.Sprintf("[label]State:[-]               [value]%s[-]\n", qi.Status))
-	} else {
-		b.WriteString("[label]State:[-]               [value]N/A[-]\n")
+		stateStatus = qi.Status
 	}
-	b.WriteString(fmt.Sprintf("[label]Consumers:[-]           [value]%d[-]\n", qi.Consumers))
-
+	consumerCapacity := "N/A"
 	if qi.ConsumerUtilisation > 0 {
-		b.WriteString(fmt.Sprintf("[label]Consumer capacity:[-]   [value]%.0f%%[-]\n", qi.ConsumerUtilisation*100))
-	} else {
-		b.WriteString("[label]Consumer capacity:[-]   [value]N/A[-]\n")
+		consumerCapacity = fmt.Sprintf("%.0f%%", qi.ConsumerUtilisation*100)
 	}
-
-	b.WriteString(fmt.Sprintf("[label]Process memory:[-]      [value]%s[-]\n", view.FormatBytes(qi.Memory)))
-	b.WriteString(fmt.Sprintf("[label]Active consumers:[-]    [value]%d[-]\n", qi.ActiveConsumers))
-	b.WriteString("\n")
+	view.WriteTextSection(&b, "State & Resources", []view.TextRow{
+		{Label: "State:", Value: stateStatus},
+		{Label: "Consumers:", Value: fmt.Sprintf("%d", qi.Consumers)},
+		{Label: "Consumer capacity:", Value: consumerCapacity},
+		{Label: "Process memory:", Value: view.FormatBytes(qi.Memory)},
+		{Label: "Active consumers:", Value: fmt.Sprintf("%d", qi.ActiveConsumers)},
+	})
 
 	// Node
 	b.WriteString("[caption]Node[-]\n")
-	b.WriteString("──────────────────────────────────────────────\n")
+	b.WriteString(strings.Repeat("─", 30) + "\n")
 	if qi.Node != "" {
 		b.WriteString(fmt.Sprintf("[value]%s[-]\n", qi.Node))
 	} else {
