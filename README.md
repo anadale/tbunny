@@ -3,7 +3,7 @@
 > A fast, keyboard-driven terminal UI for managing RabbitMQ clusters
 
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Go Version](https://img.shields.io/badge/go-%3E%3D1.21-00ADD8.svg)
+![Go Version](https://img.shields.io/badge/go-%3E%3D1.25-00ADD8.svg)
 
 ## ✨ What is TBunny?
 
@@ -25,9 +25,9 @@ This project started as a personal adventure to learn Go, and it's been heavily 
 
 ## 📦 Installation
 
-### Homebrew (macOS)
+### Homebrew (macOS and Linux)
 
-The easiest way to install on macOS:
+The easiest way to install on macOS and linux is via Homebrew:
 
 ```bash
 brew install anadale/tbunny/tbunny
@@ -71,7 +71,7 @@ Download the appropriate `.zip` file from the [**Releases page**](https://github
 
 ### Install via Go
 
-If you have Go 1.21+ installed:
+If you have Go 1.25+ installed:
 
 ```bash
 go install github.com/anadale/tbunny/cmd/tbunny@latest
@@ -105,7 +105,7 @@ When you run TBunny for the first time (or when no cluster is configured), you'l
 5. Provide your username and password
 6. Press `Enter` to save
 
-That's it! TBunny will connect to your cluster and you can start managing your RabbitMQ resources.
+That's it! TBunny will connect to your cluster, and you can start managing your RabbitMQ resources.
 
 #### Direct Connection
 
@@ -169,6 +169,7 @@ Once you're connected to a cluster, use these shortcuts to jump between views:
 |----------|------|
 | `Shift+Q` | 📦 Queues |
 | `Shift+E` | 🔄 Exchanges |
+| `Shift+C` | 🔌 Connections |
 | `Shift+V` | 🏠 Virtual Hosts |
 | `Shift+U` | 👥 Users |
 | `Shift+L` | 🌐 Clusters |
@@ -185,21 +186,21 @@ TBunny stores its configuration following the XDG Base Directory spec:
 
 ### Main Config (`config.yaml`)
 
-Customize the UI behavior:
+Customize the TBunny behavior:
 
 ```yaml
 ui:
-  enableMouse: true      # Enable mouse clicks and scrolling
   splashDuration: 1s     # How long to show the splash screen
+connectionTimeout: 10s   # Connection timeout for RabbitMQ Management API
 ```
 
 **Available Options:**
 
-- **`ui.enableMouse`** (boolean)
-  Turn mouse support on or off. Default: `true`
-
 - **`ui.splashDuration`** (duration)
   Control splash screen duration. Examples: `1s`, `500ms`, `2s`. Default: `1s`
+
+- **`connectionTimeout`** (duration)
+  Connection timeout for RabbitMQ Management API. Default: `10s`
 
 ### Cluster Configuration
 
