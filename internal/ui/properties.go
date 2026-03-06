@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -30,33 +31,19 @@ var messageProperties = []propertyDef{
 	{jsonKey: "user_id", label: "User ID", valueType: valueTypeString, placeholder: "User ID"},
 }
 
+// allPropertyLabels is the list of all message property labels, computed once.
+var allPropertyLabels = func() []string {
+	labels := make([]string, len(messageProperties))
+	for i, prop := range messageProperties {
+		labels[i] = prop.label
+	}
+	return labels
+}()
+
 type Properties struct {
-	*tview.Box
+	formWidgetBase
 
-	grid *tview.Grid
-
-	label      string
-	labelWidth int
-	labelColor tcell.Color
-	bgColor    tcell.Color
-
-	fieldTextColor tcell.Color
-	fieldBgColor   tcell.Color
-	fieldStyle     tcell.Style
-
-	rows     []*propertyRow
-	finished func(tcell.Key)
-	disabled bool
-	focus    func(p tview.Primitive)
-
-	rowsChanged func(height int)
-
-	listStyleSet        bool
-	listStyleUnselected tcell.Style
-	listStyleSelected   tcell.Style
-
-	invalidStyleSet   bool
-	invalidFieldStyle tcell.Style
+	rows []*propertyRow
 }
 
 type propertyRow struct {
@@ -69,8 +56,10 @@ type propertyRow struct {
 
 func NewProperties() *Properties {
 	p := Properties{
-		Box:  tview.NewBox(),
-		grid: tview.NewGrid(),
+		formWidgetBase: formWidgetBase{
+			Box:  tview.NewBox(),
+			grid: tview.NewGrid(),
+		},
 	}
 
 	p.SetValue(nil)
@@ -135,53 +124,15 @@ func (p *Properties) GetValue() map[string]any {
 }
 
 func (p *Properties) Draw(screen tcell.Screen) {
-	p.DrawForSubclass(screen, p)
-
-	x, y, width, height := p.GetInnerRect()
-	labelWidth := p.labelWidth
-	if labelWidth > width {
-		labelWidth = width
-	}
-	if height > 0 && labelWidth > 0 {
-		tview.Print(screen, p.label, x, y, labelWidth, tview.AlignLeft, p.labelColor)
-	}
-
-	fieldX := x + labelWidth
-	fieldWidth := width - labelWidth
-	if fieldWidth < 0 {
-		fieldWidth = 0
-	}
-
-	p.grid.SetRect(fieldX, y, fieldWidth, height)
-	p.grid.Draw(screen)
-}
-
-// GetLabel returns the item's label text.
-func (p *Properties) GetLabel() string {
-	return p.label
+	drawFormWidget(screen, p, p.Box, p.grid, p.label, p.labelWidth, p.labelColor)
 }
 
 // SetFormAttributes sets form attributes.
 func (p *Properties) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
-	p.labelWidth = labelWidth
-	p.labelColor = labelColor
-	p.bgColor = bgColor
-	p.fieldTextColor = fieldTextColor
-	p.fieldBgColor = fieldBgColor
-	p.fieldStyle = tcell.StyleDefault.Foreground(fieldTextColor).Background(fieldBgColor)
-	if !p.invalidStyleSet {
-		p.invalidFieldStyle = p.fieldStyle
-	}
-
-	p.SetBackgroundColor(bgColor)
+	p.applyFormAttributes(labelWidth, labelColor, bgColor, fieldTextColor, fieldBgColor)
 	p.applyStyles()
 
 	return p
-}
-
-// GetFieldWidth returns the width of the form item's field area.
-func (p *Properties) GetFieldWidth() int {
-	return 0
 }
 
 // GetFieldHeight returns the height of the form item's field area.
@@ -228,9 +179,7 @@ func (p *Properties) SetRowsChangedFunc(handler func(height int)) *Properties {
 
 // SetInvalidFieldStyle sets the style used to indicate an invalid value.
 func (p *Properties) SetInvalidFieldStyle(style tcell.Style) *Properties {
-	p.invalidStyleSet = true
-	p.invalidFieldStyle = style
-
+	p.setInvalidStyle(style)
 	p.applyStyles()
 
 	return p
@@ -251,107 +200,29 @@ func (p *Properties) SetListStyles(unselected, selected tcell.Style) *Properties
 
 // Focus is called when this primitive receives focus.
 func (p *Properties) Focus(delegate func(p tview.Primitive)) {
-	if p.finished != nil && p.disabled {
-		p.finished(-1)
-		return
-	}
-
 	p.focus = delegate
 
-	if ConsumeBacktab() {
-		if lastValue := p.lastValueEditor(); lastValue != nil {
-			delegate(lastValue)
-			return
-		}
-	}
-
-	if focusables := p.focusables(); len(focusables) > 0 {
-		delegate(focusables[0])
-		return
-	}
-
-	if p.grid != nil {
-		delegate(p.grid)
-		return
-	}
-
-	p.Box.Focus(delegate)
+	focusFormWidget(delegate, p.finished, p.disabled, p.lastValueEditor, p.focusables, p.grid, p.Box)
 }
 
 // HasFocus returns whether this primitive has focus.
 func (p *Properties) HasFocus() bool {
-	for _, item := range p.focusables() {
-		if item.HasFocus() {
-			return true
-		}
-	}
-
-	if p.grid != nil {
-		return p.grid.HasFocus()
-	}
-
-	return p.Box.HasFocus()
+	return hasFormWidgetFocus(p.focusables(), p.grid, p.Box)
 }
 
 // MouseHandler returns the mouse handler for this primitive.
 func (p *Properties) MouseHandler() func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (consumed bool, capture tview.Primitive) {
-	return p.WrapMouseHandler(func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (consumed bool, capture tview.Primitive) {
-		if !p.InRect(event.Position()) {
-			return false, nil
-		}
-
-		p.focus = setFocus
-
-		// Pass mouse events to the contained primitive.
-		if p.grid != nil {
-			consumed, capture = p.grid.MouseHandler()(action, event, setFocus)
-			if consumed {
-				return true, capture
-			}
-		}
-
-		return
-	})
+	return formWidgetMouseHandler(p.Box, p.grid, &p.focus)
 }
 
 // InputHandler returns the handler for this primitive.
 func (p *Properties) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-	return p.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-		p.focus = setFocus
-
-		if handler := p.focusedPrimitiveHandler(); handler != nil {
-			handler(event, setFocus)
-			return
-		}
-
-		if p.grid == nil {
-			return
-		}
-
-		if handler := p.grid.InputHandler(); handler != nil {
-			handler(event, setFocus)
-			return
-		}
-	})
+	return formWidgetInputHandler(p.Box, p.grid, &p.focus, p.focusables)
 }
 
 // PasteHandler returns the paste handler for this primitive.
 func (p *Properties) PasteHandler() func(pastedText string, setFocus func(p tview.Primitive)) {
-	return p.WrapPasteHandler(func(pastedText string, setFocus func(p tview.Primitive)) {
-		if handler := p.focusedPrimitivePasteHandler(); handler != nil {
-			handler(pastedText, setFocus)
-			return
-		}
-
-		if p.grid == nil {
-			return
-		}
-
-		if handler := p.grid.PasteHandler(); handler != nil {
-			handler(pastedText, setFocus)
-			return
-		}
-	})
+	return formWidgetPasteHandler(p.Box, p.grid, p.focusables)
 }
 
 func (p *Properties) newRow(focus bool) *propertyRow {
@@ -362,7 +233,7 @@ func (p *Properties) newRow(focus bool) *propertyRow {
 	}
 
 	// Set up the dropdown with available properties (no placeholder)
-	row.keyDrop.SetOptions(availablePropertyLabels(), nil)
+	row.keyDrop.SetOptions(allPropertyLabels, nil)
 	// Don't set the current option - leave the dropdown empty
 
 	if p.listStyleSet {
@@ -397,20 +268,8 @@ func (p *Properties) ensureTrailingEmptyRow(focus bool) {
 func (p *Properties) setRowProperty(row *propertyRow, propDef *propertyDef) {
 	row.propDef = propDef
 	row.usedIndex = findPropertyIndex(propDef.jsonKey)
-
-	// Update the list of available properties
-	row.keyDrop.SetOptions(p.availablePropertyLabelsForRow(row), nil)
-
-	// Set the currently selected property
-	availableProps := p.availablePropertiesForRow(row)
-	for i, prop := range availableProps {
-		if prop.jsonKey == propDef.jsonKey {
-			row.keyDrop.SetCurrentOption(i)
-			break
-		}
-	}
-
 	row.value.SetPlaceholder(propDef.placeholder)
+	p.updateRowDropdown(row)
 }
 
 func (p *Properties) setRowValue(row *propertyRow, value any) {
@@ -418,17 +277,8 @@ func (p *Properties) setRowValue(row *propertyRow, value any) {
 		return
 	}
 
-	switch typed := value.(type) {
-	case string:
-		row.value.SetText(typed)
-	default:
-		if numText, ok := formatNumber(value); ok {
-			row.value.SetText(numText)
-		} else {
-			row.value.SetText("")
-		}
-	}
-
+	text, _ := formatValueText(value)
+	row.value.SetText(text)
 	row.invalid = false
 	p.applyRowStyles(row)
 }
@@ -554,28 +404,7 @@ func (p *Properties) setRowHandlers() {
 }
 
 func (p *Properties) handleDone(key tcell.Key) {
-	if p.disabled {
-		if p.finished != nil {
-			p.finished(key)
-		}
-		return
-	}
-
-	switch key {
-	case tcell.KeyTab, tcell.KeyEnter:
-		if p.focusRelative(1) {
-			return
-		}
-	case tcell.KeyBacktab:
-		if p.focusRelative(-1) {
-			return
-		}
-	default:
-	}
-
-	if p.finished != nil {
-		p.finished(key)
-	}
+	dispatchDoneKey(key, p.disabled, p.finished, p.focusRelative)
 }
 
 func (p *Properties) handleRowChange(rowIndex int) {
@@ -583,20 +412,7 @@ func (p *Properties) handleRowChange(rowIndex int) {
 		return
 	}
 
-	row := p.rows[rowIndex]
-	rowEmpty := p.isRowEmpty(row)
-	lastIndex := len(p.rows) - 1
-
-	if rowIndex == lastIndex {
-		if !rowEmpty {
-			p.appendEmptyRow()
-		}
-		return
-	}
-
-	if rowEmpty {
-		p.removeRow(rowIndex)
-	}
+	handleRowChangeAt(rowIndex, len(p.rows), p.isRowEmpty(p.rows[rowIndex]), p.appendEmptyRow, p.removeRow)
 }
 
 func (p *Properties) appendEmptyRow() {
@@ -610,68 +426,17 @@ func (p *Properties) removeRow(rowIndex int) {
 		return
 	}
 
-	focusables := p.focusables()
-	focusedIndex := p.focusedIndex(focusables)
-
-	p.rows = append(p.rows[:rowIndex], p.rows[rowIndex+1:]...)
+	prevFocusedIndex := focusedIndexIn(p.focusables())
+	p.rows = slices.Delete(p.rows, rowIndex, rowIndex+1)
 	p.updateAllRowDropdowns()
 	p.rebuildGrid(false, nil)
 	p.emitRowsChanged(p.totalHeight())
 
-	if focusedIndex >= 0 && p.focus != nil {
-		nextFocusables := p.focusables()
-		if len(nextFocusables) == 0 {
-			return
-		}
-		if focusedIndex >= len(nextFocusables) {
-			focusedIndex = len(nextFocusables) - 1
-		}
-		p.focus(nextFocusables[focusedIndex])
-	}
+	restoreFocusAfterRemoval(prevFocusedIndex, p.focusables(), p.focus)
 }
 
 func (p *Properties) focusRelative(delta int) bool {
-	if p.focus == nil {
-		return false
-	}
-
-	focusables := p.focusables()
-	if len(focusables) == 0 {
-		return false
-	}
-
-	index := p.focusedIndex(focusables)
-	if index == -1 {
-		return false
-	}
-
-	next := index + delta
-	if next < 0 || next >= len(focusables) {
-		return false
-	}
-
-	p.focus(focusables[next])
-	return true
-}
-
-func (p *Properties) focusedPrimitiveHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
-	for _, item := range p.focusables() {
-		if item.HasFocus() {
-			return item.InputHandler()
-		}
-	}
-
-	return nil
-}
-
-func (p *Properties) focusedPrimitivePasteHandler() func(pastedText string, setFocus func(p tview.Primitive)) {
-	for _, item := range p.focusables() {
-		if item.HasFocus() {
-			return item.PasteHandler()
-		}
-	}
-
-	return nil
+	return focusRelativeIn(p.focusables(), delta, p.focus)
 }
 
 func (p *Properties) focusables() []tview.Primitive {
@@ -685,34 +450,15 @@ func (p *Properties) focusables() []tview.Primitive {
 }
 
 func (p *Properties) focusedPrimitive() tview.Primitive {
-	for _, item := range p.focusables() {
-		if item.HasFocus() {
-			return item
-		}
-	}
-
-	return nil
-}
-
-func (p *Properties) focusedIndex(items []tview.Primitive) int {
-	for index, item := range items {
-		if item.HasFocus() {
-			return index
-		}
-	}
-
-	return -1
+	return focusedIn(p.focusables())
 }
 
 func (p *Properties) lastValueEditor() tview.Primitive {
-	for i := len(p.rows) - 1; i >= 0; i-- {
-		row := p.rows[i]
-		if row.value != nil {
-			return row.value
-		}
+	if len(p.rows) == 0 {
+		return nil
 	}
 
-	return nil
+	return p.rows[len(p.rows)-1].value
 }
 
 func (p *Properties) isRowEmpty(row *propertyRow) bool {
@@ -733,20 +479,8 @@ func (p *Properties) totalHeight() int {
 	return height
 }
 
-func (p *Properties) emitRowsChanged(height int) {
-	if p.rowsChanged != nil {
-		p.rowsChanged(height)
-	}
-}
-
 func (p *Properties) containsPrimitive(prim tview.Primitive) bool {
-	for _, item := range p.focusables() {
-		if item == prim {
-			return true
-		}
-	}
-
-	return false
+	return containsIn(p.focusables(), prim)
 }
 
 func (p *Properties) indexOfRow(row *propertyRow) int {
@@ -759,20 +493,29 @@ func (p *Properties) indexOfRow(row *propertyRow) int {
 	return -1
 }
 
-// updateAllRowDropdowns updates the lists of available properties in all rows
+// updateAllRowDropdowns updates the available-properties dropdown for every row.
 func (p *Properties) updateAllRowDropdowns() {
 	for _, row := range p.rows {
-		labels := p.availablePropertyLabelsForRow(row)
-		row.keyDrop.SetOptions(labels, nil)
+		p.updateRowDropdown(row)
+	}
+}
 
-		// Restore selection if a property was already selected
-		if row.propDef != nil {
-			availableProps := p.availablePropertiesForRow(row)
-			for i, prop := range availableProps {
-				if prop.jsonKey == row.propDef.jsonKey {
-					row.keyDrop.SetCurrentOption(i)
-					break
-				}
+// updateRowDropdown rebuilds the options for a single row's key dropdown,
+// restricting choices to properties not already used by other rows.
+func (p *Properties) updateRowDropdown(row *propertyRow) {
+	availableProps := p.availablePropertiesForRow(row)
+
+	labels := make([]string, len(availableProps))
+	for i, prop := range availableProps {
+		labels[i] = prop.label
+	}
+	row.keyDrop.SetOptions(labels, nil)
+
+	if row.propDef != nil {
+		for i, prop := range availableProps {
+			if prop.jsonKey == row.propDef.jsonKey {
+				row.keyDrop.SetCurrentOption(i)
+				break
 			}
 		}
 	}
@@ -797,25 +540,6 @@ func (p *Properties) availablePropertiesForRow(row *propertyRow) []propertyDef {
 	return available
 }
 
-// availablePropertyLabelsForRow returns the list of labels of available properties for the given row
-func (p *Properties) availablePropertyLabelsForRow(row *propertyRow) []string {
-	props := p.availablePropertiesForRow(row)
-	labels := make([]string, len(props))
-	for i, prop := range props {
-		labels[i] = prop.label
-	}
-	return labels
-}
-
-// availablePropertyLabels returns the list of all property labels
-func availablePropertyLabels() []string {
-	labels := make([]string, len(messageProperties))
-	for i, prop := range messageProperties {
-		labels[i] = prop.label
-	}
-	return labels
-}
-
 // findPropertyByJsonKey finds property definition by JSON key
 func findPropertyByJsonKey(jsonKey string) *propertyDef {
 	for i := range messageProperties {
@@ -823,6 +547,7 @@ func findPropertyByJsonKey(jsonKey string) *propertyDef {
 			return &messageProperties[i]
 		}
 	}
+
 	return nil
 }
 
@@ -833,5 +558,6 @@ func findPropertyIndex(jsonKey string) int {
 			return i
 		}
 	}
+
 	return -1
 }
