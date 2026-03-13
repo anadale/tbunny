@@ -114,7 +114,18 @@ func NewCluster(ctx context.Context, cfg *Config) (c *Cluster, err error) {
 		virtualHosts: vhosts,
 	}
 
+	conn.AddListener(c)
+
 	return c, nil
+}
+
+func (c *Cluster) ConnectionUriChanged(uri string) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	c.Client.Endpoint = uri
+
+	slog.Info("RabbitMQ endpoint updated", "uri", uri)
 }
 
 func (c *Cluster) IsAvailable() bool {

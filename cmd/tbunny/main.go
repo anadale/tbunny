@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	stdlog "log"
 	"log/slog"
 	"os"
 	"runtime/debug"
@@ -11,8 +13,10 @@ import (
 	"tbunny/internal/view/application"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/lmittmann/tint"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -82,6 +86,13 @@ func run(*cobra.Command, []string) error {
 	}()
 
 	slog.SetDefault(slog.New(logHandler))
+
+	// Silence third-party loggers that would corrupt TUI output.
+	// klog.SetLogger with logr.Discard() covers all klog calls, including structured ErrorS/InfoS
+	// variants that klog.SetOutput alone does not intercept.
+	// stdlog.SetOutput silences stdlib log.Printf calls from HTTP/transport layers.
+	klog.SetLogger(logr.Discard())
+	stdlog.SetOutput(io.Discard)
 
 	config.Init(configDir)
 	cluster.Init(config.RootDirectory())
