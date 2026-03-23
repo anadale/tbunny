@@ -2,15 +2,17 @@ package queues
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"tbunny/internal/model"
+	"tbunny/internal/rmq"
 	"tbunny/internal/skins"
+	"tbunny/internal/sl"
 	"tbunny/internal/ui"
 	"tbunny/internal/utils"
 	"tbunny/internal/view"
 
 	"github.com/gdamore/tcell/v2"
-	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	"github.com/rivo/tview"
 )
 
@@ -26,7 +28,7 @@ type QueueDetails struct {
 
 	name      string
 	vhost     string
-	queueInfo *rabbithole.DetailedQueueInfo
+	queueInfo *rmq.DetailedQueueInfo
 
 	skin *skins.Skin
 
@@ -173,6 +175,7 @@ func (q *QueueDetails) performUpdate(view.UpdateKind) {
 	i, err := q.Cluster().GetQueue(q.vhost, q.name)
 	if err != nil {
 		q.App().StatusLine().Errorf("Не удалось получить данные очереди: %v", err.Error())
+		slog.Error("Failed to get queue info", sl.Error, err.Error(), sl.VirtualHost, q.vhost, "queue", q.name)
 		return
 	}
 
@@ -723,7 +726,7 @@ func (q *QueueDetails) bindScrollKeys(km ui.KeyMap) {
 	}))
 }
 
-func (q *QueueDetails) formatQueueInfoAsText(qi *rabbithole.DetailedQueueInfo) string {
+func (q *QueueDetails) formatQueueInfoAsText(qi *rmq.DetailedQueueInfo) string {
 	b := new(strings.Builder)
 
 	// Messages

@@ -52,6 +52,19 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }
 
+func newGETRequest(client *Client, path string) (*http.Request, error) {
+	s := client.Endpoint + "/api/" + path
+	req, err := http.NewRequest("GET", s, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Close = true
+	req.SetBasicAuth(client.Username, client.Password)
+
+	return req, err
+}
+
 func newRequestWithBody(client *Client, method string, path string, body []byte) (*http.Request, error) {
 	s := client.Endpoint + "/api/" + path
 
