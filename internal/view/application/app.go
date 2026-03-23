@@ -14,6 +14,7 @@ import (
 	"tbunny/internal/view/clusters"
 	"tbunny/internal/view/connections"
 	"tbunny/internal/view/exchanges"
+	"tbunny/internal/view/nodes"
 	"tbunny/internal/view/queues"
 	"tbunny/internal/view/users"
 	"tbunny/internal/view/vhosts"
@@ -69,6 +70,7 @@ var topLevelViews = map[string]topLevelViewDescriptor{
 	"clusters":    {"Clusters", ui.KeyShiftL, clusters.NewClusters},
 	"connections": {"Connections", ui.KeyShiftC, connections.NewConnections},
 	"users":       {"Users", ui.KeyShiftU, users.NewView},
+	"nodes":       {"Nodes", ui.KeyShiftN, nodes.NewView},
 }
 
 func NewApp(version string) *App {

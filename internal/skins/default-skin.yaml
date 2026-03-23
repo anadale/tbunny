@@ -47,6 +47,10 @@ skin:
       valueFgColor: skyblue
       captionFgColor: aqua
       captionBgColor: black
+      normalStateColor: green
+      warningStateColor: yellow
+      criticalStateColor: red
+      infoStateColor: blue
     json:
       bgColor: black
       propertyNameColor: white

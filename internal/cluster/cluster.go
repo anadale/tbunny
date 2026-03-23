@@ -123,7 +123,7 @@ func (c *Cluster) ConnectionUriChanged(uri string) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 
-	c.Client.Endpoint = uri
+	c.Endpoint = uri
 
 	slog.Info("RabbitMQ endpoint updated", "uri", uri)
 }

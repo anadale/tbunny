@@ -321,7 +321,7 @@ func (q *QueueDetails) updateArguments(args map[string]interface{}) {
 			builder.WriteString("\n")
 		}
 
-		builder.WriteString(fmt.Sprintf("%s: %v", key, value))
+		fmt.Fprintf(&builder, "%s: %v", key, value)
 	}
 
 	if builder.Len() == 0 {

@@ -75,8 +75,7 @@ tasks/
 config/
 dist/
 docs/
+.superpowers/
 
-# TBunny
-config/
-dist/
-docs/
+# ralphex progress logs
+.ralphex/progress/

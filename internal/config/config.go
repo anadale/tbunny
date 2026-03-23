@@ -111,8 +111,3 @@ func newConfig() *Config {
 	}
 }
 
-func notifyConfigChanged() {
-	for _, l := range listeners {
-		l.ConfigChanged(config)
-	}
-}

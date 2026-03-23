@@ -88,11 +88,15 @@ type (
 	}
 
 	Stats struct {
-		BgColor        Color `json:"bgColor" yaml:"bgColor"`
-		LabelFgColor   Color `json:"labelFgColor" yaml:"fgColor"`
-		ValueFgColor   Color `json:"valueFgColor" yaml:"valueFgColor"`
-		CaptionFgColor Color `json:"captionFgColor" yaml:"captionFgColor"`
-		CaptionBgColor Color `json:"captionBgColor" yaml:"captionBgColor"`
+		BgColor            Color `json:"bgColor" yaml:"bgColor"`
+		LabelFgColor       Color `json:"labelFgColor" yaml:"labelFgColor"`
+		ValueFgColor       Color `json:"valueFgColor" yaml:"valueFgColor"`
+		CaptionFgColor     Color `json:"captionFgColor" yaml:"captionFgColor"`
+		CaptionBgColor     Color `json:"captionBgColor" yaml:"captionBgColor"`
+		NormalStateColor   Color `json:"normalStateColor" yaml:"normalStateColor"`
+		WarningStateColor  Color `json:"warningStateColor" yaml:"warningStateColor"`
+		CriticalStateColor Color `json:"criticalStateColor" yaml:"criticalStateColor"`
+		InfoStateColor     Color `json:"infoStateColor" yaml:"infoStateColor"`
 	}
 
 	Json struct {
@@ -222,11 +226,15 @@ func newTable() Table {
 
 func newStats() Stats {
 	return Stats{
-		BgColor:        "black",
-		LabelFgColor:   "white",
-		ValueFgColor:   "skyblue",
-		CaptionFgColor: "aqua",
-		CaptionBgColor: "black",
+		BgColor:            "black",
+		LabelFgColor:       "white",
+		ValueFgColor:       "skyblue",
+		CaptionFgColor:     "aqua",
+		CaptionBgColor:     "black",
+		NormalStateColor:   "green",
+		WarningStateColor:  "yellow",
+		CriticalStateColor: "red",
+		InfoStateColor:     "blue",
 	}
 }
 
